@@ -147,7 +147,7 @@ input[type=search]:focus,select:focus{outline:2px solid var(--accent);outline-of
 
 /* table */
 .tbl-wrap{overflow:visible;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
-@media (max-width:1120px){.tbl-wrap{overflow-x:auto}}
+@media (max-width:1120px){.tbl-wrap{overflow-x:auto}header.mast{position:static}thead th{position:static;top:auto}}
 table{border-collapse:collapse;width:100%;min-width:1040px}
 thead th{position:sticky;top:var(--mast-h,60px);z-index:20;background:var(--surface-3);color:var(--ink-2);
   font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;text-align:right;
@@ -233,6 +233,8 @@ footer{margin-top:34px;border-top:1px solid var(--line);padding-top:22px}
   .map-grid{grid-template-columns:1fr}.map-side{border-left:none;border-top:1px solid var(--line)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* mobile: header must not stick (source-order override) */
+@media (max-width:1120px){thead th{position:static !important;top:auto !important}}
 </style>
 
 <header class="mast">
