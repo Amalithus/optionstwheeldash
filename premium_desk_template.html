@@ -1,0 +1,668 @@
+<title>Premium Desk</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#eef1f4; --surface:#ffffff; --surface-2:#f6f8fa; --surface-3:#eceff3;
+  --ink:#18212e; --ink-2:#3a4657; --muted:#697585; --faint:#9aa6b4;
+  --line:#dde3ea; --line-strong:#c7d0da;
+  --accent:#0e7c86; --accent-ink:#0a5b63; --accent-wash:#e2f1f2;
+  --good:#1a7f4b; --good-wash:#e2f2ea;
+  --warn:#b7770a; --warn-wash:#f8efd9;
+  --bad:#c0392b; --bad-wash:#fbe6e2;
+  --shadow:0 1px 2px rgba(20,30,45,.04),0 4px 16px rgba(20,30,45,.06);
+  --radius:11px;
+}
+:root:not([data-theme="light"]){ }
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0d1319; --surface:#151d25; --surface-2:#1a232c; --surface-3:#212c37;
+    --ink:#e7edf3; --ink-2:#c2ccd7; --muted:#8794a2; --faint:#5f6d7c;
+    --line:#28333f; --line-strong:#37444f;
+    --accent:#3fb6bf; --accent-ink:#77d3da; --accent-wash:#123138;
+    --good:#4cc487; --good-wash:#12301f;
+    --warn:#e0a53c; --warn-wash:#33270e;
+    --bad:#e8695c; --bad-wash:#331917;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 22px rgba(0,0,0,.36);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0d1319; --surface:#151d25; --surface-2:#1a232c; --surface-3:#212c37;
+  --ink:#e7edf3; --ink-2:#c2ccd7; --muted:#8794a2; --faint:#5f6d7c;
+  --line:#28333f; --line-strong:#37444f;
+  --accent:#3fb6bf; --accent-ink:#77d3da; --accent-wash:#123138;
+  --good:#4cc487; --good-wash:#12301f;
+  --warn:#e0a53c; --warn-wash:#33270e;
+  --bad:#e8695c; --bad-wash:#331917;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 22px rgba(0,0,0,.36);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:"Archivo",system-ui,sans-serif;margin:0;text-wrap:balance;letter-spacing:-.01em}
+.wrap{max-width:1320px;margin:0 auto;padding:0 20px}
+
+/* masthead */
+header.mast{border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:40}
+.mast-in{display:flex;align-items:center;gap:18px;padding:14px 0;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.mark{width:34px;height:34px;border-radius:9px;flex:0 0 auto;display:grid;place-items:center;
+  background:linear-gradient(150deg,var(--accent),var(--accent-ink));color:#fff;font-size:18px;box-shadow:var(--shadow)}
+.brand h1{font-size:19px;font-weight:800;line-height:1}
+.brand .sub{font-size:11.5px;color:var(--muted);letter-spacing:.03em;margin-top:2px}
+.mast-meta{margin-left:auto;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.meta-item{display:flex;flex-direction:column;gap:1px}
+.meta-item .k{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);font-weight:600}
+.meta-item .v{font-size:13px;font-weight:600;color:var(--ink-2)}
+.theme-btn{border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink-2);
+  width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:15px;display:grid;place-items:center}
+.theme-btn:hover{border-color:var(--accent);color:var(--accent)}
+.age{font-size:11px;color:var(--faint);margin-top:1px}
+.age.stale{color:var(--warn);font-weight:600}
+.refresh-btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--accent);
+  background:var(--accent);color:#fff;height:34px;padding:0 14px;border-radius:9px;cursor:pointer;
+  font-family:"IBM Plex Sans",sans-serif;font-size:13px;font-weight:600;box-shadow:var(--shadow);transition:filter .15s,background .15s}
+.refresh-btn:hover{filter:brightness(1.07)}
+.refresh-btn:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px}
+.refresh-btn.copied{background:var(--good);border-color:var(--good)}
+.refresh-btn .ic{font-size:15px;display:inline-block}
+.refresh-btn.spin .ic{animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* refresh sheet */
+.sheet-bg{position:fixed;inset:0;background:rgba(10,16,22,.5);backdrop-filter:blur(2px);z-index:90;
+  display:none;align-items:center;justify-content:center;padding:20px}
+.sheet-bg.open{display:flex}
+.sheet{background:var(--surface);border:1px solid var(--line-strong);border-radius:14px;max-width:460px;width:100%;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);overflow:hidden}
+.sheet-hd{padding:18px 22px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:11px}
+.sheet-hd .mk{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;font-size:16px;
+  background:linear-gradient(150deg,var(--accent),var(--accent-ink));color:#fff}
+.sheet-hd h3{font-size:16px;font-weight:700}
+.sheet-bd{padding:18px 22px 22px}
+.sheet-bd p{margin:0 0 14px;color:var(--ink-2);font-size:13.5px;line-height:1.55}
+.cmd{display:flex;align-items:center;gap:10px;background:var(--surface-3);border:1px solid var(--line-strong);
+  border-radius:9px;padding:11px 13px;margin-bottom:8px}
+.cmd code{font-family:"IBM Plex Mono";font-size:13.5px;color:var(--accent-ink);font-weight:600;flex:1}
+.cmd button{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:7px;
+  padding:6px 12px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.cmd button:hover{filter:brightness(1.07)}
+.cmd button.ok{background:var(--good);border-color:var(--good)}
+.sheet-steps{list-style:none;margin:6px 0 0;padding:0;counter-reset:s}
+.sheet-steps li{position:relative;padding:6px 0 6px 30px;font-size:12.5px;color:var(--muted);counter-increment:s}
+.sheet-steps li::before{content:counter(s);position:absolute;left:0;top:5px;width:20px;height:20px;border-radius:50%;
+  background:var(--accent-wash);color:var(--accent-ink);font-size:11px;font-weight:700;display:grid;place-items:center}
+.sheet-ft{padding:12px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;background:var(--surface-2)}
+.sheet-ft button{border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-2);border-radius:8px;
+  padding:8px 16px;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer}
+.sheet-ft button:hover{border-color:var(--accent);color:var(--accent)}
+
+/* section */
+main{padding:22px 0 60px}
+.sec-head{display:flex;align-items:baseline;gap:12px;margin:26px 0 13px}
+.sec-head h2{font-size:15px;font-weight:700;letter-spacing:.02em}
+.sec-head .hint{font-size:12px;color:var(--muted)}
+.eyebrow{font-size:10.5px;text-transform:uppercase;letter-spacing:.11em;color:var(--accent-ink);font-weight:600}
+
+/* KPI tiles */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 15px;box-shadow:var(--shadow)}
+.kpi .lab{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px}
+.kpi .num{font-family:"Archivo";font-size:27px;font-weight:700;margin-top:7px;line-height:1;letter-spacing:-.02em}
+.kpi .cap{font-size:11.5px;color:var(--muted);margin-top:5px}
+.kpi.accent .num{color:var(--accent-ink)}
+.kpi.good .num{color:var(--good)} .kpi.bad .num{color:var(--bad)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+/* opportunity map */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.map-grid{display:grid;grid-template-columns:1fr 232px;gap:0}
+#mapCanvas{width:100%;height:340px;display:block}
+.map-side{border-left:1px solid var(--line);padding:16px 16px;display:flex;flex-direction:column;gap:13px}
+.map-side h3{font-size:13px;font-weight:700}
+.legend{display:flex;flex-direction:column;gap:8px;font-size:12px;color:var(--ink-2)}
+.legend .row{display:flex;align-items:center;gap:8px}
+.axis-note{font-size:11.5px;color:var(--muted);line-height:1.45}
+.map-pick{font-size:12px;color:var(--ink-2)}
+.map-pick b{color:var(--ink)}
+
+/* controls */
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 14px}
+.ctl{display:flex;flex-direction:column;gap:4px}
+.ctl label{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:600}
+input[type=search],select{font-family:inherit;font-size:13px;color:var(--ink);background:var(--surface);
+  border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;min-height:36px}
+input[type=search]{min-width:190px}
+input[type=search]:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.toggle{display:inline-flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line-strong);
+  border-radius:8px;padding:8px 12px;min-height:36px;cursor:pointer;font-size:12.5px;font-weight:500;color:var(--ink-2);user-select:none}
+.toggle input{accent-color:var(--accent);width:15px;height:15px}
+.count-note{margin-left:auto;font-size:12px;color:var(--muted);align-self:flex-end;padding-bottom:9px}
+
+/* table */
+.tbl-wrap{overflow:visible;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+@media (max-width:1120px){.tbl-wrap{overflow-x:auto}}
+table{border-collapse:collapse;width:100%;min-width:1040px}
+thead th{position:sticky;top:var(--mast-h,60px);z-index:20;background:var(--surface-3);color:var(--ink-2);
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;text-align:right;
+  padding:10px 12px;border-bottom:1px solid var(--line-strong);white-space:nowrap;cursor:pointer;user-select:none}
+thead th.l{text-align:left}
+thead th:hover{color:var(--accent)}
+thead th .arr{opacity:.4;font-size:9px;margin-left:2px}
+thead th.sorted{color:var(--accent);background:var(--accent-wash)}
+thead th.sorted .arr{opacity:1}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;vertical-align:middle}
+tbody td.l{text-align:left}
+tbody tr.row{cursor:pointer}
+tbody tr.row:hover{background:var(--surface-2)}
+tbody tr.benched{opacity:.62}
+tbody tr.benched:hover{opacity:.85}
+tr.row td:first-child{border-left:3px solid transparent}
+tr.row.gate td:first-child{border-left-color:var(--bad)}
+.rank{color:var(--faint);font-size:12px;width:30px}
+.wchk{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;vertical-align:middle;margin:0}
+.wcount{color:var(--accent-ink);font-weight:700;font-size:11px}
+thead th[data-k="watch"]{font-size:13px;color:var(--warn)}
+.sym{font-family:"Archivo";font-weight:700;font-size:14px;letter-spacing:-.01em}
+.nm{font-size:11px;color:var(--muted);max-width:168px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sector-chip{font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:1px 8px;background:var(--surface-2)}
+
+/* score cell */
+.score{display:inline-flex;align-items:center;gap:9px;justify-content:flex-end}
+.score .val{font-family:"IBM Plex Mono";font-weight:600;font-size:13.5px;width:30px;text-align:right}
+.bar{width:74px;height:7px;border-radius:4px;background:var(--surface-3);overflow:hidden;position:relative}
+.bar>span{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.sub-spark{display:inline-flex;gap:3px;align-items:flex-end;height:20px}
+.sub-spark i{width:7px;border-radius:1.5px;display:block;background:var(--line-strong)}
+
+.premium{font-family:"IBM Plex Mono";font-weight:600}
+.premium .ann{font-size:11px;color:var(--muted);font-weight:400}
+.rating{display:inline-flex;align-items:center;gap:6px;justify-content:flex-end}
+.rating .pill{font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:20px}
+.beta-tag{font-family:"IBM Plex Mono";font-size:12.5px}
+
+/* earnings chip */
+.echip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.echip.clear{background:var(--surface-2);color:var(--muted);font-weight:500}
+.echip.warn{background:var(--warn-wash);color:var(--warn)}
+.echip.bad{background:var(--bad-wash);color:var(--bad)}
+.echip.xdiv{background:var(--warn-wash);color:var(--warn);font-size:10px;font-weight:600;padding:1px 6px}
+.ecell{display:inline-flex;flex-direction:column;gap:3px;align-items:flex-end}
+
+/* detail row */
+tr.detail>td{padding:0;border-bottom:1px solid var(--line-strong);background:var(--surface-2)}
+.detail-in{padding:18px 20px 20px 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:22px}
+.dgroup h4{font-family:"Archivo";font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--accent-ink);font-weight:700;margin-bottom:9px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.dl{display:grid;grid-template-columns:1fr auto;gap:5px 10px;font-size:12.5px}
+.dl .k{color:var(--muted)}
+.dl .v{font-family:"IBM Plex Mono";font-weight:500;color:var(--ink);text-align:right}
+.dl .v.g{color:var(--good)} .dl .v.b{color:var(--bad)} .dl .v.w{color:var(--warn)}
+.detail-note{grid-column:1/-1;font-size:11.5px;color:var(--muted);border-top:1px dashed var(--line-strong);padding-top:11px;line-height:1.5}
+
+/* portfolio placeholder */
+.watch{margin-top:14px;border:1.5px dashed var(--line-strong);border-radius:var(--radius);background:
+  repeating-linear-gradient(135deg,transparent,transparent 11px,var(--surface-2) 11px,var(--surface-2) 12px),var(--surface);
+  padding:22px 24px;display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+.watch .ic{width:44px;height:44px;border-radius:11px;flex:0 0 auto;display:grid;place-items:center;font-size:22px;
+  background:var(--accent-wash);color:var(--accent-ink)}
+.watch .body{flex:1;min-width:260px}
+.watch h3{font-size:15px;font-weight:700;display:flex;align-items:center;gap:10px}
+.tag-soon{font-family:"IBM Plex Sans";font-size:9.5px;text-transform:uppercase;letter-spacing:.09em;font-weight:700;
+  color:var(--warn);background:var(--warn-wash);padding:2px 8px;border-radius:20px}
+.watch p{margin:8px 0 0;color:var(--ink-2);max-width:64ch;font-size:13px}
+.watch .how{margin-top:12px;font-size:12px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);
+  border-radius:8px;padding:9px 12px;display:inline-flex;gap:8px;align-items:center}
+.watch code{font-family:"IBM Plex Mono";background:var(--surface-3);padding:1px 6px;border-radius:5px;color:var(--accent-ink);font-size:11.5px}
+
+/* footer / methodology */
+footer{margin-top:34px;border-top:1px solid var(--line);padding-top:22px}
+.method{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px}
+.method h4{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2);font-weight:700;margin-bottom:7px}
+.method p{font-size:12px;color:var(--muted);margin:0;line-height:1.55}
+.method .wt{font-family:"IBM Plex Mono";color:var(--accent-ink);font-weight:600}
+.disclaim{margin-top:22px;font-size:11.5px;color:var(--faint);line-height:1.55;border-top:1px dashed var(--line);padding-top:16px}
+
+@media (max-width:900px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .map-grid{grid-template-columns:1fr}.map-side{border-left:none;border-top:1px solid var(--line)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="mast">
+  <div class="wrap mast-in">
+    <div class="brand">
+      <div class="mark">🛡️</div>
+      <div>
+        <h1>Premium Desk</h1>
+        <div class="sub">WEEKLY OPTIONS SCREEN · LOW-DOWNSIDE S&amp;P 500</div>
+      </div>
+    </div>
+    <div class="mast-meta">
+      <div class="meta-item"><span class="k">As of</span><span class="v" id="m-asof">—</span><span class="age" id="m-age"></span></div>
+      <div class="meta-item"><span class="k">This wk expiry</span><span class="v" id="m-exp">—</span></div>
+      <div class="meta-item"><span class="k">Universe</span><span class="v" id="m-univ">—</span></div>
+      <button class="refresh-btn" id="refreshBtn" title="Re-run the screen with fresh data">
+        <span class="ic" id="refreshIc">⟳</span> <span id="refreshTxt">Refresh</span>
+      </button>
+      <button class="theme-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle light/dark theme">◐</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="sec-head" style="margin-top:20px">
+    <span class="eyebrow">Desk summary</span>
+  </div>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="sec-head">
+    <h2>Opportunity map</h2>
+    <span class="hint">Downside safety (→) vs estimated weekly premium yield (↑). Top-right pays well and screens safe.</span>
+  </div>
+  <div class="panel">
+    <div class="map-grid">
+      <canvas id="mapCanvas"></canvas>
+      <div class="map-side">
+        <h3>How to read it</h3>
+        <div class="legend">
+          <div class="row"><span class="dot" style="background:var(--good)"></span> Safer name (composite ≥ 65)</div>
+          <div class="row"><span class="dot" style="background:var(--warn)"></span> Middle of the pack</div>
+          <div class="row"><span class="dot" style="background:var(--bad)"></span> Earnings / ex-div before Fri</div>
+        </div>
+        <div class="axis-note">Cross-hairs mark the universe medians. The sweet spot for selling weeklies is the <b>upper-right</b>: acceptable downside risk that still pays real premium. Click any dot to jump to its row.</div>
+        <div class="map-pick" id="mapPick"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-head">
+    <h2>Eligible names</h2>
+    <span class="hint">Click a row for the full breakdown. Sort by any column.</span>
+  </div>
+
+  <div class="controls">
+    <div class="ctl"><label for="q">Search</label><input type="search" id="q" placeholder="Ticker or name…"></div>
+    <div class="ctl"><label for="sector">Sector</label><select id="sector"><option value="">All sectors</option></select></div>
+    <div class="ctl"><label for="sortsel">Sort by</label>
+      <select id="sortsel">
+        <option value="composite">Downside-safety score</option>
+        <option value="annPremYield">Premium yield</option>
+        <option value="scoreFund">Fundamentals</option>
+        <option value="scoreVol">Low volatility</option>
+        <option value="beta">Beta (low→high)</option>
+        <option value="price">Price</option>
+        <option value="daysToEarnings">Days to earnings</option>
+      </select>
+    </div>
+    <label class="toggle"><input type="checkbox" id="watchOnly"> ★ Watchlist only <span id="watchCount" class="wcount"></span></label>
+    <label class="toggle"><input type="checkbox" id="hideGate"> Hide flagged (earn / ex-div)</label>
+    <label class="toggle"><input type="checkbox" id="onlySafe"> Composite ≥ 60 only</label>
+    <span class="count-note" id="countNote"></span>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr id="head"></tr></thead>
+      <tbody id="body"></tbody>
+    </table>
+  </div>
+
+  <div class="sec-head"><h2>Portfolio watch</h2><span class="hint">Your live positions</span></div>
+  <div class="watch">
+    <div class="ic">📰</div>
+    <div class="body">
+      <h3>Weekly news &amp; sentiment digest <span class="tag-soon">Planned · v2</span></h3>
+      <p>Once you've sold options on your 5–6 names, this section will hold a short weekly write-up per position: what moved the stock, a positive / neutral / negative sentiment read, and any flag that threatens the trade — guidance cuts, downgrades, litigation, or a sector shock.</p>
+      <div class="how">▶ To activate: tell Claude <code>run my weekly update</code> and list your tickers.</div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="sec-head" style="margin-top:4px"><h2>Methodology &amp; sources</h2></div>
+    <div class="method">
+      <div>
+        <h4>Eligible universe</h4>
+        <p>S&amp;P 500 constituents (Wikipedia) that carry weekly options (Cboe weeklys list) and trade under <b>$120</b>. Rebuilt on every refresh.</p>
+      </div>
+      <div>
+        <h4>Downside-safety score</h4>
+        <p>Composite of <span class="wt">Fundamentals ×0.35</span> (leverage, liquidity, margins, ROE, FCF) · <span class="wt">Low-vol ×0.30</span> (beta, realized & downside vol, worst 1-day drop, drawdown, trend) · <span class="wt">Analyst ×0.20</span> · <span class="wt">Valuation ×0.15</span> (P/E vs sector). Percentile-ranked within the universe.</p>
+      </div>
+      <div>
+        <h4>Earnings gate</h4>
+        <p>Next earnings dates cross-checked between Yahoo and the Nasdaq calendar. Names reporting on or before this week's Friday expiry are <b>benched</b> (red) — gap risk you don't want to be short through.</p>
+      </div>
+      <div>
+        <h4>Premium estimate</h4>
+        <p>Model-based, not live: the average premium of a 1-week ~0.15-delta covered call <b>or</b> cash-secured put (one leg — you sell a single side), priced by Black–Scholes on each name's realized volatility. For ranking income richness — <b>confirm exact premiums in TWS</b> before selling.</p>
+      </div>
+    </div>
+    <div class="disclaim" id="disclaim"></div>
+  </footer>
+</main>
+
+<div class="sheet-bg" id="sheetBg">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-hd"><div class="mk">⟳</div><h3 id="sheetTitle">Refresh the screen</h3></div>
+    <div class="sheet-bd">
+      <p>This dashboard is a snapshot. To pull today's prices, fundamentals, earnings dates and re-score every name, Claude re-runs the screen — a hosted page can't reach the market-data sources on its own.</p>
+      <div class="cmd"><code id="cmdText">refresh the dashboard</code><button id="copyCmd">Copy</button></div>
+      <ol class="sheet-steps">
+        <li>Copy the command above.</li>
+        <li>Paste it into your Claude chat for this project.</li>
+        <li>Claude rebuilds and republishes to <b>this same link</b> — reload the page to see it.</li>
+      </ol>
+    </div>
+    <div class="sheet-ft"><button id="sheetClose">Got it</button></div>
+  </div>
+</div>
+
+<script>
+const PAYLOAD = __DATA__;
+const META = PAYLOAD.meta, ROWS = PAYLOAD.rows;
+const $ = s=>document.querySelector(s);
+const isGated = r => !!(r.earnBeforeExpiry || r.exDivBeforeExpiry);
+const WKEY='premiumdesk.watchlist.v1';
+function loadWatch(){try{return new Set(JSON.parse(localStorage.getItem(WKEY)||'[]'))}catch(e){return new Set()}}
+function saveWatch(){try{localStorage.setItem(WKEY,JSON.stringify([...watch]))}catch(e){}}
+function updateWatchUI(){const el=$('#watchCount'); if(el) el.textContent = watch.size? '('+watch.size+')':'';}
+let watch=loadWatch();
+
+/* ---------- helpers ---------- */
+const fmtP = (v,d=2)=> v==null||isNaN(v)?'—':'$'+Number(v).toFixed(d);
+const fmtN = (v,d=2)=> v==null||isNaN(v)?'—':Number(v).toFixed(d);
+const fmtPct = (v,d=1)=> v==null||isNaN(v)?'—':(v*100).toFixed(d)+'%';
+const fmtPctRaw = (v,d=1)=> v==null||isNaN(v)?'—':Number(v).toFixed(d)+'%';
+const fmtCap = v=> v==null?'—':(v>=1e12?'$'+(v/1e12).toFixed(2)+'T':v>=1e9?'$'+(v/1e9).toFixed(1)+'B':'$'+(v/1e6).toFixed(0)+'M');
+const css = n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+// score -> color (red->amber->green), returns hsl
+function scoreColor(s){
+  if(s==null) return css('--faint');
+  const t=Math.max(0,Math.min(100,s))/100;
+  // 0 -> red(4), 50 -> amber(42), 100 -> green(150)
+  let h = t<0.5 ? 4 + (t/0.5)*(44-4) : 44 + ((t-0.5)/0.5)*(150-44);
+  const sat = t<0.5? 68 : 55 - (t-0.5)*20;
+  const dark = document.documentElement.getAttribute('data-theme')==='dark' ||
+    (!document.documentElement.getAttribute('data-theme') && matchMedia('(prefers-color-scheme:dark)').matches);
+  const l = dark? 56 : 42;
+  return `hsl(${h.toFixed(0)} ${sat.toFixed(0)}% ${l}%)`;
+}
+function ratingLabel(m){
+  if(m==null) return ['n/a', css('--muted')];
+  if(m<=1.8) return ['Strong Buy', css('--good')];
+  if(m<=2.4) return ['Buy', css('--good')];
+  if(m<=2.9) return ['Moderate Buy', css('--warn')];
+  if(m<=3.4) return ['Hold', css('--muted')];
+  return ['Underweight', css('--bad')];
+}
+
+/* ---------- meta / kpis ---------- */
+$('#m-asof').textContent = META.asOfDate;
+(function(){
+  const gen = new Date(META.generated); const now = new Date();
+  const days = Math.floor((now - new Date(META.asOfDate+'T00:00:00'))/86400000);
+  const el = $('#m-age');
+  let txt = days<=0 ? 'updated today' : days===1 ? '1 day ago' : days+' days ago';
+  el.textContent = '· '+txt;
+  // stale after ~5 calendar days
+  if(days>=5){ el.classList.add('stale'); $('#refreshTxt').textContent='Refresh'; $('#refreshBtn').classList.add('nudge'); }
+})();
+$('#m-exp').textContent = new Date(META.expiryFriday+'T00:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+$('#m-univ').textContent = META.universeCount+' names';
+$('#disclaim').innerHTML = 'Generated '+new Date(META.generated).toLocaleString()+' · Data: Yahoo Finance, Cboe, Nasdaq (delayed / indicative). '+
+  '<b>This is a monitoring &amp; screening tool, not investment advice.</b> Premium figures are model estimates; verify live option prices, IV, and earnings dates in your broker before trading. The decision to sell any option is yours.';
+
+const gateNames = ROWS.filter(r=>isGated(r));
+const safe = ROWS.filter(r=>r.composite>=65 && !isGated(r));
+const topPick = ROWS.filter(r=>!isGated(r)).sort((a,b)=>b.composite-a.composite)[0];
+const medYield = (()=>{const a=ROWS.map(r=>r.annPremYield).filter(x=>x!=null).sort((x,y)=>x-y);return a.length?a[Math.floor(a.length/2)]:null})();
+const kpis=[
+  {lab:'Eligible universe',num:META.universeCount,cap:'S&P 500 · weeklys · &lt;$120',cls:''},
+  {lab:'Screen as safer',num:safe.length,cap:'composite ≥ 65, gate clear',cls:'good',dot:'--good'},
+  {lab:'Benched — earn/ex-div',num:gateNames.length,cap:'earnings or ex-div before expiry',cls:gateNames.length?'bad':'',dot:'--bad'},
+  {lab:'Top pick today',num:topPick?topPick.symbol:'—',cap:topPick?('score '+topPick.composite+' · β '+fmtN(topPick.beta)):'',cls:'accent'},
+  {lab:'Median prem. yield',num:medYield!=null?medYield.toFixed(0)+'%':'—',cap:'annualized, one leg (avg)',cls:''},
+];
+$('#kpis').innerHTML = kpis.map(k=>`<div class="kpi ${k.cls}">
+  <div class="lab">${k.dot?`<span class="dot" style="background:var(${k.dot})"></span>`:''}${k.lab}</div>
+  <div class="num">${k.num}</div><div class="cap">${k.cap}</div></div>`).join('');
+
+/* ---------- columns ---------- */
+const COLS=[
+  {k:'watch',t:'★',l:true,nosort:true,cell:r=>`<input type="checkbox" class="wchk" data-sym="${r.symbol}" ${watch.has(r.symbol)?'checked':''} aria-label="Add ${r.symbol} to watchlist">`},
+  {k:'rank',t:'#',l:true,cell:(r,i)=>`<span class="rank mono">${i+1}</span>`,nosort:true},
+  {k:'symbol',t:'Name',l:true,cell:r=>`<div style="display:flex;flex-direction:column;gap:1px">
+      <span class="sym">${r.symbol}</span><span class="nm" title="${(r.name||'').replace(/"/g,'')}">${r.name||''}</span></div>`},
+  {k:'sector',t:'Sector',l:true,cell:r=>`<span class="sector-chip">${(r.sector||'').replace('Information Technology','Info Tech').replace('Consumer Discretionary','Cons. Disc.').replace('Communication Services','Comm. Svcs').replace('Consumer Staples','Staples')}</span>`},
+  {k:'price',t:'Price',cell:r=>`<span class="mono">${fmtP(r.price)}</span>`},
+  {k:'composite',t:'Safety score',cell:r=>{const c=scoreColor(r.composite);return `<div class="score">
+      <span class="val" style="color:${c}">${fmtN(r.composite,0)}</span>
+      <span class="bar"><span style="width:${r.composite}%;background:${c}"></span></span></div>`}},
+  {k:'subs',t:'F · V · A · Q',cell:r=>{const parts=[['scoreFund',r.scoreFund],['scoreVol',r.scoreVol],['scoreAnalyst',r.scoreAnalyst],['scoreVal',r.scoreVal]];
+      return `<span class="sub-spark" title="Fundamentals · Volatility · Analyst · Valuation">`+
+      parts.map(([_,v])=>`<i style="height:${Math.max(3,(v||0)*0.2)}px;background:${scoreColor(v)}"></i>`).join('')+`</span>`},nosort:true},
+  {k:'beta',t:'Beta',cell:r=>`<span class="beta-tag">${fmtN(r.beta)}</span>`},
+  {k:'annPremYield',t:'Est. premium',cell:r=>`<span class="premium">${fmtPctRaw(r.estWeekPremPct,2)}<span class="ann"> · ${r.annPremYield!=null?r.annPremYield.toFixed(0)+'% yr':'—'}</span></span>`},
+  {k:'recMean',t:'Analyst',cell:r=>{const[lab,col]=ratingLabel(r.recMean);return `<span class="rating"><span class="pill" style="color:${col};background:color-mix(in srgb,${col} 14%,transparent)">${lab}</span></span>`}},
+  {k:'trailingPE',t:'P/E',cell:r=>`<span class="mono">${r.trailingPE&&r.trailingPE>0?fmtN(r.trailingPE,1):'—'}</span>`},
+  {k:'daysToEarnings',t:'Earnings',cell:r=>{const m=exDivMarker(r);return m?`<span class="ecell">${earningsChip(r)}${m}</span>`:earningsChip(r)}},
+];
+function earningsChip(r){
+  if(r.earnBeforeExpiry) return `<span class="echip bad">⚠ ${fmtDate(r.earningsDateStr)}</span>`;
+  if(r.earnThisWeek) return `<span class="echip warn">${fmtDate(r.earningsDateStr)}</span>`;
+  if(r.earningsDateStr){const d=r.daysToEarnings; return `<span class="echip clear">${fmtDate(r.earningsDateStr)}${d!=null&&d>=0?` · ${d}d`:''}</span>`}
+  return `<span class="echip clear">—</span>`;
+}
+function exDivMarker(r){
+  if(!r.exDivDateStr) return '';
+  const days=Math.round((new Date(r.exDivDateStr+'T00:00:00')-new Date(META.asOfDate+'T00:00:00'))/86400000);
+  if(days<0||days>7) return '';
+  return `<span class="echip xdiv" title="Ex-dividend ${fmtDate(r.exDivDateStr)} \u2014 early-assignment risk on ITM covered calls">\u25C6 ex-div ${fmtDate(r.exDivDateStr)}</span>`;
+}
+function fmtDate(s){ if(!s) return '—'; const d=new Date(s+'T00:00:00'); return d.toLocaleDateString(undefined,{month:'short',day:'numeric'}) }
+
+/* ---------- state + render ---------- */
+let sortKey='composite', sortDir=-1;
+const state={q:'',sector:'',hideGate:false,onlySafe:false,watchOnly:false};
+
+const secSel=$('#sector');
+[...new Set(ROWS.map(r=>r.sector).filter(Boolean))].sort().forEach(s=>{
+  const o=document.createElement('option');o.value=s;o.textContent=s;secSel.appendChild(o)});
+
+function headRow(){
+  $('#head').innerHTML = COLS.map(c=>`<th class="${c.l?'l':''} ${c.k===sortKey?'sorted':''}" data-k="${c.k}" ${c.nosort?'data-nosort=1':''}>
+    ${c.t}${!c.nosort?`<span class="arr">${c.k===sortKey?(sortDir<0?'▼':'▲'):'▽'}</span>`:''}</th>`).join('');
+  $('#head').querySelectorAll('th').forEach(th=>{ if(th.dataset.nosort) return;
+    th.onclick=()=>{const k=th.dataset.k; if(k===sortKey) sortDir*=-1; else{sortKey=k; sortDir=(k==='beta'||k==='trailingPE'||k==='daysToEarnings'||k==='price')?1:-1;} $('#sortsel').value=k; render();}});
+}
+function getRows(){
+  let rs=ROWS.filter(r=>{
+    if(state.q){const q=state.q.toLowerCase(); if(!(r.symbol.toLowerCase().includes(q)||(r.name||'').toLowerCase().includes(q))) return false;}
+    if(state.sector && r.sector!==state.sector) return false;
+    if(state.hideGate && isGated(r)) return false;
+    if(state.watchOnly && !watch.has(r.symbol)) return false;
+    if(state.onlySafe && !(r.composite>=60)) return false;
+    return true;
+  });
+  const nullLast=(v)=> v==null?(sortDir<0?-1e12:1e12):v;
+  rs.sort((a,b)=> (nullLast(a[sortKey])-nullLast(b[sortKey]))*sortDir );
+  return rs;
+}
+let expanded=new Set();
+function render(){
+  headRow();
+  const rs=getRows();
+  const body=$('#body'); body.innerHTML='';
+  rs.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.className='row'+(isGated(r)?' gate benched':'');
+    tr.innerHTML=COLS.map(c=>`<td class="${c.l?'l':''}">${c.cell(r,i)}</td>`).join('');
+    tr.onclick=()=>{ if(expanded.has(r.symbol))expanded.delete(r.symbol); else expanded.add(r.symbol); render(); };
+    body.appendChild(tr);
+    if(expanded.has(r.symbol)) body.appendChild(detailRow(r));
+  });
+  body.querySelectorAll('.wchk').forEach(cb=>{
+    cb.addEventListener('click',e=>e.stopPropagation());
+    cb.addEventListener('change',()=>{const sy=cb.dataset.sym; if(cb.checked)watch.add(sy);else watch.delete(sy); saveWatch(); updateWatchUI(); if(state.watchOnly)render();});
+  });
+  $('#countNote').textContent = rs.length+' of '+ROWS.length+' names shown';
+}
+function dv(v,cls=''){return `<span class="v ${cls}">${v}</span>`}
+function detailRow(r){
+  const tr=document.createElement('tr'); tr.className='detail';
+  const upside = (r.targetMean&&r.price)?((r.targetMean/r.price-1)*100):null;
+  const nde=(r.netDebtEbitda);
+  const td=document.createElement('td'); td.colSpan=COLS.length;
+  td.innerHTML=`<div class="detail-in">
+    <div class="dgroup"><h4>Fundamentals</h4><div class="dl">
+      <span class="k">Debt / Equity</span>${dv(r.debtToEquity!=null?r.debtToEquity.toFixed(0)+'%':'—', r.debtToEquity!=null&&r.debtToEquity<80?'g':(r.debtToEquity>200?'b':''))}
+      <span class="k">Net debt / EBITDA</span>${dv(nde!=null?nde.toFixed(1)+'×':'—', nde!=null&&nde<2?'g':(nde>4?'b':''))}
+      <span class="k">Current ratio</span>${dv(fmtN(r.currentRatio), r.currentRatio>1.3?'g':(r.currentRatio<1?'b':''))}
+      <span class="k">Profit margin</span>${dv(fmtPct(r.profitMargins), r.profitMargins>0.12?'g':(r.profitMargins<0?'b':''))}
+      <span class="k">Operating margin</span>${dv(fmtPct(r.operatingMargins))}
+      <span class="k">Return on equity</span>${dv(fmtPct(r.roe), r.roe>0.15?'g':'')}
+      <span class="k">Free cash flow</span>${dv(fmtCap(r.fcf), r.fcf>0?'g':'b')}
+    </div></div>
+    <div class="dgroup"><h4>Risk &amp; trend</h4><div class="dl">
+      <span class="k">Beta</span>${dv(fmtN(r.beta), r.beta<0.8?'g':(r.beta>1.3?'b':''))}
+      <span class="k">Realized vol (3m)</span>${dv(fmtPct(r.histVol,0), r.histVol<0.25?'g':(r.histVol>0.45?'b':''))}
+      <span class="k">Max drawdown (1y)</span>${dv(fmtPct(r.maxDD1y,0), r.maxDD1y>-0.2?'g':(r.maxDD1y<-0.4?'b':''))}
+      <span class="k">Downside deviation</span>${dv(fmtPct(r.downsideDev,0), r.downsideDev<0.18?'g':(r.downsideDev>0.35?'b':''))}
+      <span class="k">Worst 1-day drop</span>${dv(fmtPct(r.worstDrop1d,1), r.worstDrop1d>-0.05?'g':(r.worstDrop1d<-0.10?'b':''))}
+      <span class="k">Days down &gt;5% (1y)</span>${dv(r.gapDays!=null?r.gapDays+' days':'—', r.gapDays<=1?'g':(r.gapDays>=6?'b':''))}
+      <span class="k">Return skew</span>${dv(fmtN(r.retSkew), r.retSkew>0?'g':(r.retSkew<-0.5?'b':''))}
+      <span class="k">vs 50-day MA</span>${dv(fmtPct(r.distMA50,1), r.distMA50>0?'g':'b')}
+      <span class="k">vs 200-day MA</span>${dv(fmtPct(r.distMA200,1), r.distMA200>0?'g':'b')}
+      <span class="k">52-week position</span>${dv(r.pos52w!=null?(r.pos52w*100).toFixed(0)+'%':'—')}
+      <span class="k">1m / 3m return</span>${dv(fmtPct(r.ret1m,1)+' / '+fmtPct(r.ret3m,1))}
+    </div></div>
+    <div class="dgroup"><h4>Analyst &amp; valuation</h4><div class="dl">
+      <span class="k">Consensus</span>${dv(ratingLabel(r.recMean)[0]+(r.recMean?' ('+r.recMean.toFixed(2)+')':''))}
+      <span class="k"># analysts</span>${dv(r.numAnalysts??'—')}
+      <span class="k">Mean target</span>${dv(fmtP(r.targetMean))}
+      <span class="k">Implied upside</span>${dv(upside!=null?upside.toFixed(1)+'%':'—', upside>0?'g':'b')}
+      <span class="k">Target range</span>${dv(fmtP(r.targetLow,0)+' – '+fmtP(r.targetHigh,0))}
+      <span class="k">Trailing / fwd P/E</span>${dv((r.trailingPE>0?r.trailingPE.toFixed(1):'—')+' / '+(r.forwardPE>0?r.forwardPE.toFixed(1):'—'))}
+      <span class="k">Dividend yield</span>${dv(r.divYield?fmtPct(r.divYield):'—')}
+      <span class="k">Payout ratio</span>${dv(r.payoutRatio!=null&&r.payoutRatio>0?fmtPct(r.payoutRatio,0):'—', (r.payoutRatio>0&&r.payoutRatio<0.6)?'g':(r.payoutRatio>0.9?'b':''))}
+      <span class="k">Ex-dividend</span>${dv(r.exDivDateStr?fmtDate(r.exDivDateStr):'—', r.exDivBeforeExpiry?'w':'')}
+    </div></div>
+    <div class="dgroup"><h4>Weekly premium (model)</h4><div class="dl">
+      <span class="k">Spot</span>${dv(fmtP(r.price))}
+      <span class="k">~0.15Δ put strike</span>${dv(fmtP(r.putStrike,1))}
+      <span class="k">~0.15Δ call strike</span>${dv(fmtP(r.callStrike,1))}
+      <span class="k">Est. put premium</span>${dv(fmtP(r.putPrem))}
+      <span class="k">Est. call premium</span>${dv(fmtP(r.callPrem))}
+      <span class="k">Weekly premium (avg leg)</span>${dv(fmtPctRaw(r.estWeekPremPct,2),'w')}
+      <span class="k">Annualized yield</span>${dv(r.annPremYield!=null?r.annPremYield.toFixed(0)+'%':'—','w')}
+    </div></div>
+    <div class="detail-note">${r.earnBeforeExpiry?`<b style="color:var(--bad)">⚠ Earnings ${fmtDate(r.earningsDateStr)} — before this week's expiry. Selling weeklies here carries earnings-gap risk; benched by the gate.</b> `:''}${r.exDivBeforeExpiry?`<b style="color:var(--warn)">◆ Ex-dividend ${fmtDate(r.exDivDateStr)} before expiry — early-assignment risk on in-the-money covered calls.</b> `:''}Next earnings: <b>${r.earningsDateStr||'unscheduled'}</b>${r.daysToEarnings!=null?` (${r.daysToEarnings}d)`:''}. Premium figures are Black–Scholes estimates on realized vol — indicative only; confirm live IV &amp; prices in TWS.</div>
+  </div>`;
+  tr.appendChild(td); return tr;
+}
+
+/* ---------- controls ---------- */
+$('#q').oninput=e=>{state.q=e.target.value;render()};
+$('#sector').onchange=e=>{state.sector=e.target.value;render()};
+$('#sortsel').onchange=e=>{sortKey=e.target.value;sortDir=(sortKey==='beta'||sortKey==='trailingPE'||sortKey==='daysToEarnings'||sortKey==='price')?1:-1;render()};
+$('#hideGate').onchange=e=>{state.hideGate=e.target.checked;render()};
+$('#onlySafe').onchange=e=>{state.onlySafe=e.target.checked;render()};
+$('#watchOnly').onchange=e=>{state.watchOnly=e.target.checked;render()};
+
+/* ---------- theme ---------- */
+const tbtn=$('#themeBtn');
+function applyTheme(t){ if(t)document.documentElement.setAttribute('data-theme',t); else document.documentElement.removeAttribute('data-theme'); drawMap(); render(); }
+tbtn.onclick=()=>{ const cur=document.documentElement.getAttribute('data-theme');
+  const isDark = cur==='dark' || (!cur && matchMedia('(prefers-color-scheme:dark)').matches);
+  applyTheme(isDark?'light':'dark'); };
+matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{drawMap();render()});
+
+/* ---------- opportunity map ---------- */
+const cv=$('#mapCanvas'); let pts=[];
+function drawMap(){
+  const rect=cv.getBoundingClientRect(); const dpr=Math.min(2,devicePixelRatio||1);
+  const W=rect.width, H=rect.height; if(W<10){return;}
+  cv.width=W*dpr; cv.height=H*dpr; const x=cv.getContext('2d'); x.setTransform(dpr,0,0,dpr,0,0); x.clearRect(0,0,W,H);
+  const pad={l:52,r:16,t:18,b:40};
+  const xs=ROWS.map(r=>r.composite), ys=ROWS.map(r=>r.annPremYield).filter(v=>v!=null);
+  const xMin=Math.min(...xs)-3,xMax=Math.max(...xs)+3, yMin=0,yMax=Math.max(...ys)*1.08;
+  const px=v=>pad.l+(v-xMin)/(xMax-xMin)*(W-pad.l-pad.r);
+  const py=v=>H-pad.b-(v-yMin)/(yMax-yMin)*(H-pad.t-pad.b);
+  const line=css('--line'), muted=css('--muted'), faint=css('--faint');
+  // grid
+  x.strokeStyle=line; x.lineWidth=1; x.fillStyle=faint; x.font='10px "IBM Plex Mono"';
+  for(let g=0; g<=yMax; g+=20){ const Y=py(g); x.globalAlpha=.55;x.beginPath();x.moveTo(pad.l,Y);x.lineTo(W-pad.r,Y);x.stroke();x.globalAlpha=1;
+    x.textAlign='right';x.fillText(g+'%',pad.l-8,Y+3); }
+  for(let g=Math.ceil(xMin/10)*10; g<=xMax; g+=10){ const X=px(g); x.textAlign='center'; x.fillText(g,X,H-pad.b+15); }
+  // median crosshair
+  const medX=[...xs].sort((a,b)=>a-b)[Math.floor(xs.length/2)];
+  const medY=[...ys].sort((a,b)=>a-b)[Math.floor(ys.length/2)];
+  x.setLineDash([4,4]); x.strokeStyle=muted; x.globalAlpha=.5;
+  x.beginPath();x.moveTo(px(medX),pad.t);x.lineTo(px(medX),H-pad.b);x.stroke();
+  x.beginPath();x.moveTo(pad.l,py(medY));x.lineTo(W-pad.r,py(medY));x.stroke();
+  x.setLineDash([]);x.globalAlpha=1;
+  // axis labels
+  x.fillStyle=muted; x.font='600 10px "IBM Plex Sans"'; x.textAlign='center';
+  x.fillText('DOWNSIDE SAFETY  →', (pad.l+W-pad.r)/2, H-6);
+  x.save();x.translate(13,(pad.t+H-pad.b)/2);x.rotate(-Math.PI/2);x.fillText('PREMIUM YIELD  →',0,0);x.restore();
+  // points
+  pts=[];
+  ROWS.forEach(r=>{ if(r.annPremYield==null)return; const X=px(r.composite),Y=py(r.annPremYield);
+    const col = isGated(r)? css('--bad') : scoreColor(r.composite);
+    x.beginPath();x.arc(X,Y,r.composite>=65?6:5,0,7); x.fillStyle=col; x.globalAlpha=isGated(r)?.55:.9; x.fill();
+    x.globalAlpha=1; x.lineWidth=1.2; x.strokeStyle=css('--surface'); x.stroke();
+    pts.push({X,Y,r}); });
+  // label a few standouts (high composite)
+  x.fillStyle=css('--ink'); x.font='600 10px "IBM Plex Mono"'; x.textAlign='left';
+  ROWS.filter(r=>!isGated(r)).sort((a,b)=>b.composite-a.composite).slice(0,6).forEach(r=>{
+    if(r.annPremYield==null)return; x.fillText(r.symbol, px(r.composite)+8, py(r.annPremYield)+3);
+  });
+}
+cv.addEventListener('click',e=>{ const rect=cv.getBoundingClientRect(); const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  let best=null,bd=1e9; pts.forEach(p=>{const d=(p.X-mx)**2+(p.Y-my)**2; if(d<bd){bd=d;best=p}});
+  if(best&&bd<200){ state.q=best.r.symbol; $('#q').value=best.r.symbol; expanded.add(best.r.symbol); render();
+    $('#mapPick').innerHTML=`Selected <b>${best.r.symbol}</b> — safety ${best.r.composite}, yield ${best.r.annPremYield?.toFixed(0)}%.`;
+    document.querySelector('.tbl-wrap').scrollIntoView({behavior:'smooth',block:'start'}); }
+});
+cv.style.cursor='pointer';
+
+/* ---------- refresh ---------- */
+const CMD='refresh the dashboard';
+const sheetBg=$('#sheetBg');
+function openSheet(){ sheetBg.classList.add('open'); $('#sheetClose').focus(); }
+function closeSheet(){ sheetBg.classList.remove('open'); }
+$('#refreshBtn').onclick=async()=>{
+  openSheet();
+  // best-effort auto-copy so paste is ready
+  try{ await navigator.clipboard.writeText(CMD); flashCopied(); }catch(e){}
+};
+function flashCopied(){ const b=$('#copyCmd'); b.textContent='Copied ✓'; b.classList.add('ok');
+  setTimeout(()=>{b.textContent='Copy'; b.classList.remove('ok');},1800); }
+$('#copyCmd').onclick=async()=>{
+  try{ await navigator.clipboard.writeText(CMD); flashCopied(); }
+  catch(e){ const r=document.createRange(); r.selectNode($('#cmdText'));
+    const s=getSelection(); s.removeAllRanges(); s.addRange(r); } // fallback: select text to copy manually
+};
+$('#sheetClose').onclick=closeSheet;
+sheetBg.onclick=e=>{ if(e.target===sheetBg) closeSheet(); };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&sheetBg.classList.contains('open')) closeSheet(); });
+
+/* ---------- keep sticky column-header flush under the masthead ---------- */
+const mastEl=document.querySelector('header.mast');
+function setMastH(){ document.documentElement.style.setProperty('--mast-h', mastEl.offsetHeight+'px'); }
+setMastH(); new ResizeObserver(setMastH).observe(mastEl); addEventListener('resize',setMastH);
+
+/* init */
+new ResizeObserver(()=>drawMap()).observe(cv);
+updateWatchUI();
+render(); drawMap();
+</script>

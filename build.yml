@@ -1,0 +1,73 @@
+name: Build Premium Desk
+
+on:
+  schedule:
+    # GitHub cron is UTC. 13:35 UTC = 9:35 EDT (summer); 14:35 UTC = 9:35 EST (winter).
+    # Both fire year-round; the ET-guard below lets only the 9 a.m.-ET one proceed.
+    - cron: '35 13 * * 1-5'
+    - cron: '35 14 * * 1-5'
+  workflow_dispatch: {}   # manual "Run workflow" button
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.guard.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decide whether to build (DST-aware, ~9:35 ET only)
+        id: guard
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          et = datetime.now(ZoneInfo("America/New_York"))
+          manual = os.environ.get("EVENT") == "workflow_dispatch"
+          run = manual or (et.weekday() < 5 and et.hour == 9)
+          print(f"ET={et.isoformat()}  weekday={et.weekday()}  manual={manual}  run={run}")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"run={'true' if run else 'false'}\n")
+          PY
+
+      - uses: actions/setup-python@v5
+        if: steps.guard.outputs.run == 'true'
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        if: steps.guard.outputs.run == 'true'
+        run: pip install -r requirements.txt
+
+      - name: Build dashboard
+        if: steps.guard.outputs.run == 'true'
+        run: python build_site.py
+
+      - name: Upload Pages artifact
+        if: steps.guard.outputs.run == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+  deploy:
+    needs: build
+    if: needs.build.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
