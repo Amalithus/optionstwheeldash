@@ -58,6 +58,7 @@ header.mast{border-bottom:1px solid var(--line);background:var(--surface);positi
 .brand h1{font-size:19px;font-weight:800;line-height:1}
 .brand .sub{font-size:11.5px;color:var(--muted);letter-spacing:.03em;margin-top:2px}
 .mast-meta{margin-left:auto;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.mast-actions{display:flex;align-items:center;gap:10px}
 .meta-item{display:flex;flex-direction:column;gap:1px}
 .meta-item .k{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);font-weight:600}
 .meta-item .v{font-size:13px;font-weight:600;color:var(--ink-2)}
@@ -238,6 +239,20 @@ footer{margin-top:34px;border-top:1px solid var(--line);padding-top:22px}
   .kpis{grid-template-columns:repeat(2,1fr)}
   .map-grid{grid-template-columns:1fr}.map-side{border-left:none;border-top:1px solid var(--line)}
 }
+@media (max-width:640px){
+  .mast-in{gap:8px 14px;padding:12px 0}
+  .brand{flex:1 1 auto;min-width:0}
+  .brand h1{font-size:17px}
+  .brand .sub{font-size:9.5px;letter-spacing:.02em;white-space:normal}
+  .mast-actions{order:2;margin-left:auto}
+  .mast-meta{order:3;flex-basis:100%;width:100%;margin-left:0;gap:8px 18px;padding-top:10px;margin-top:2px;border-top:1px solid var(--line)}
+  .meta-item{flex-direction:row;gap:6px;align-items:baseline}
+  .meta-item .k{font-size:9.5px}
+  .meta-item .v{font-size:12px}
+  .age{margin:0 0 0 2px}
+  .refresh-btn{height:32px;padding:0 12px;font-size:12.5px}
+  .theme-btn{width:32px;height:32px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 /* mobile: header must not stick (source-order override) */
 @media (max-width:1120px){thead th{position:static !important;top:auto !important}}
@@ -256,6 +271,8 @@ footer{margin-top:34px;border-top:1px solid var(--line);padding-top:22px}
       <div class="meta-item"><span class="k">As of</span><span class="v" id="m-asof">—</span><span class="age" id="m-age"></span></div>
       <div class="meta-item"><span class="k">This wk expiry</span><span class="v" id="m-exp">—</span></div>
       <div class="meta-item"><span class="k">Universe</span><span class="v" id="m-univ">—</span></div>
+    </div>
+    <div class="mast-actions">
       <button class="refresh-btn" id="refreshBtn" title="Re-run the screen with fresh data">
         <span class="ic" id="refreshIc">⟳</span> <span id="refreshTxt">Refresh</span>
       </button>
