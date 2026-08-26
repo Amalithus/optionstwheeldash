@@ -51,7 +51,7 @@ h1,h2,h3{font-family:"Archivo",system-ui,sans-serif;margin:0;text-wrap:balance;l
 
 /* masthead */
 header.mast{border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:40}
-.mast-in{display:flex;align-items:center;gap:18px;padding:14px 0;flex-wrap:wrap}
+.mast-in{display:flex;align-items:center;gap:18px;padding-top:14px;padding-bottom:14px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:11px;min-width:0}
 .mark{width:34px;height:34px;border-radius:9px;flex:0 0 auto;display:grid;place-items:center;
   background:linear-gradient(150deg,var(--accent),var(--accent-ink));color:#fff;font-size:18px;box-shadow:var(--shadow)}
@@ -240,7 +240,7 @@ footer{margin-top:34px;border-top:1px solid var(--line);padding-top:22px}
   .map-grid{grid-template-columns:1fr}.map-side{border-left:none;border-top:1px solid var(--line)}
 }
 @media (max-width:640px){
-  .mast-in{gap:8px 14px;padding:12px 0}
+  .mast-in{gap:8px 14px;padding-top:12px;padding-bottom:12px}
   .brand{flex:1 1 auto;min-width:0}
   .brand h1{font-size:17px}
   .brand .sub{font-size:9.5px;letter-spacing:.02em;white-space:normal}
@@ -273,9 +273,6 @@ footer{margin-top:34px;border-top:1px solid var(--line);padding-top:22px}
       <div class="meta-item"><span class="k">Universe</span><span class="v" id="m-univ">—</span></div>
     </div>
     <div class="mast-actions">
-      <button class="refresh-btn" id="refreshBtn" title="Re-run the screen with fresh data">
-        <span class="ic" id="refreshIc">⟳</span> <span id="refreshTxt">Refresh</span>
-      </button>
       <button class="theme-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle light/dark theme">◐</button>
     </div>
   </div>
@@ -378,21 +375,7 @@ footer{margin-top:34px;border-top:1px solid var(--line);padding-top:22px}
   </footer>
 </main>
 
-<div class="sheet-bg" id="sheetBg">
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
-    <div class="sheet-hd"><div class="mk">⟳</div><h3 id="sheetTitle">Refresh the screen</h3></div>
-    <div class="sheet-bd">
-      <p>This dashboard is a snapshot. To pull today's prices, fundamentals, earnings dates and re-score every name, Claude re-runs the screen — a hosted page can't reach the market-data sources on its own.</p>
-      <div class="cmd"><code id="cmdText">refresh the dashboard</code><button id="copyCmd">Copy</button></div>
-      <ol class="sheet-steps">
-        <li>Copy the command above.</li>
-        <li>Paste it into your Claude chat for this project.</li>
-        <li>Claude rebuilds and republishes to <b>this same link</b> — reload the page to see it.</li>
-      </ol>
-    </div>
-    <div class="sheet-ft"><button id="sheetClose">Got it</button></div>
-  </div>
-</div>
+
 
 <script>
 const PAYLOAD = __DATA__;
@@ -443,7 +426,7 @@ $('#m-asof').textContent = META.asOfDate;
   let txt = days<=0 ? 'updated today' : days===1 ? '1 day ago' : days+' days ago';
   el.textContent = '· '+txt;
   // stale after ~5 calendar days
-  if(days>=5){ el.classList.add('stale'); $('#refreshTxt').textContent='Refresh'; $('#refreshBtn').classList.add('nudge'); }
+  if(days>=5){ el.classList.add('stale'); }
 })();
 $('#m-exp').textContent = new Date(META.expiryFriday+'T00:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
 $('#m-univ').textContent = META.universeCount+' names';
@@ -663,27 +646,6 @@ cv.addEventListener('click',e=>{ const rect=cv.getBoundingClientRect(); const mx
     document.querySelector('.tbl-wrap').scrollIntoView({behavior:'smooth',block:'start'}); }
 });
 cv.style.cursor='pointer';
-
-/* ---------- refresh ---------- */
-const CMD='refresh the dashboard';
-const sheetBg=$('#sheetBg');
-function openSheet(){ sheetBg.classList.add('open'); $('#sheetClose').focus(); }
-function closeSheet(){ sheetBg.classList.remove('open'); }
-$('#refreshBtn').onclick=async()=>{
-  openSheet();
-  // best-effort auto-copy so paste is ready
-  try{ await navigator.clipboard.writeText(CMD); flashCopied(); }catch(e){}
-};
-function flashCopied(){ const b=$('#copyCmd'); b.textContent='Copied ✓'; b.classList.add('ok');
-  setTimeout(()=>{b.textContent='Copy'; b.classList.remove('ok');},1800); }
-$('#copyCmd').onclick=async()=>{
-  try{ await navigator.clipboard.writeText(CMD); flashCopied(); }
-  catch(e){ const r=document.createRange(); r.selectNode($('#cmdText'));
-    const s=getSelection(); s.removeAllRanges(); s.addRange(r); } // fallback: select text to copy manually
-};
-$('#sheetClose').onclick=closeSheet;
-sheetBg.onclick=e=>{ if(e.target===sheetBg) closeSheet(); };
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&sheetBg.classList.contains('open')) closeSheet(); });
 
 /* ---------- keep sticky column-header flush under the masthead ---------- */
 const mastEl=document.querySelector('header.mast');
