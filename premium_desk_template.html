@@ -219,6 +219,12 @@ tr.detail>td{padding:0;border-bottom:1px solid var(--line-strong);background:var
 .watch .how{margin-top:12px;font-size:12px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);
   border-radius:8px;padding:9px 12px;display:inline-flex;gap:8px;align-items:center}
 .watch code{font-family:"IBM Plex Mono";background:var(--surface-3);padding:1px 6px;border-radius:5px;color:var(--accent-ink);font-size:11.5px}
+.watch-actions{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}
+.wl-copy{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--accent);background:var(--accent);color:#fff;
+  height:36px;padding:0 16px;border-radius:9px;cursor:pointer;font-family:"IBM Plex Sans",sans-serif;font-size:13px;font-weight:600;box-shadow:var(--shadow)}
+.wl-copy:hover{filter:brightness(1.07)}
+.wl-copy.ok{background:var(--good);border-color:var(--good)}
+.wl-status{font-size:12.5px;color:var(--muted);font-weight:500}
 
 /* footer / methodology */
 footer{margin-top:34px;border-top:1px solid var(--line);padding-top:22px}
@@ -321,9 +327,13 @@ footer{margin-top:34px;border-top:1px solid var(--line);padding-top:22px}
   <div class="watch">
     <div class="ic">📰</div>
     <div class="body">
-      <h3>Weekly news &amp; sentiment digest <span class="tag-soon">Planned · v2</span></h3>
-      <p>Once you've sold options on your 5–6 names, this section will hold a short weekly write-up per position: what moved the stock, a positive / neutral / negative sentiment read, and any flag that threatens the trade — guidance cuts, downgrades, litigation, or a sector shock.</p>
-      <div class="how">▶ To activate: tell Claude <code>run my weekly update</code> and list your tickers.</div>
+      <h3>Weekly news &amp; sentiment digest</h3>
+      <p>A short weekly write-up on the names you follow: what moved each stock, a positive / neutral / negative read, and any flag that threatens a short-options position — earnings or ex-div in your window, downgrades, litigation, or a sector shock.</p>
+      <div class="watch-actions">
+        <button class="wl-copy" id="copyWatch">⧉ Copy my watchlist</button>
+        <span class="wl-status" id="copyWatchStatus"></span>
+      </div>
+      <div class="how">Then paste it into Claude (desktop or mobile) and I'll write the note.</div>
     </div>
   </div>
 
@@ -662,6 +672,19 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&sheetBg.classList.
 const mastEl=document.querySelector('header.mast');
 function setMastH(){ document.documentElement.style.setProperty('--mast-h', mastEl.offsetHeight+'px'); }
 setMastH(); new ResizeObserver(setMastH).observe(mastEl); addEventListener('resize',setMastH);
+
+/* ---------- copy watchlist for weekly update ---------- */
+const cwBtn=document.getElementById('copyWatch');
+if(cwBtn){ cwBtn.onclick=async()=>{
+  const syms=[...watch]; const st=document.getElementById('copyWatchStatus');
+  if(!syms.length){ st.textContent='Tick some names in the ★ column first.'; st.style.color='var(--warn)'; return; }
+  const txt='Run my weekly update using the weekly-watchlist-note skill on these tickers: '+syms.join(', ');
+  try{ await navigator.clipboard.writeText(txt);
+    cwBtn.classList.add('ok'); cwBtn.textContent='✓ Copied '+syms.length+' name'+(syms.length>1?'s':'');
+    st.textContent='Paste it into Claude to get your note.'; st.style.color='';
+    setTimeout(()=>{cwBtn.classList.remove('ok'); cwBtn.textContent='⧉ Copy my watchlist';},2400);
+  }catch(e){ st.textContent='Copy these: '+txt; st.style.color=''; }
+};}
 
 /* init */
 new ResizeObserver(()=>drawMap()).observe(cv);
