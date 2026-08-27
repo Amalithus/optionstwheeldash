@@ -2,10 +2,11 @@ name: Build Premium Desk
 
 on:
   schedule:
-    # GitHub cron is UTC. 13:35 UTC = 9:35 EDT (summer); 14:35 UTC = 9:35 EST (winter).
-    # Both fire year-round; the ET-guard below lets only the 9 a.m.-ET one proceed.
-    - cron: '35 13 * * 1-5'
-    - cron: '35 14 * * 1-5'
+    # GitHub cron is UTC. Fire at :35 past every UTC hour that could fall inside
+    # ET market hours year-round: EDT (UTC-4) covers UTC 13-20, EST (UTC-5) covers
+    # UTC 14-21 -> union = UTC 13-21. The DST-aware guard below then lets only the
+    # runs whose ET hour is 9..16 proceed, i.e. hourly ~9:35 through ~16:35 ET.
+    - cron: '35 13-21 * * 1-5'
   workflow_dispatch: {}   # manual "Run workflow" button
 
 permissions:
@@ -25,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Decide whether to build (DST-aware, ~9:35 ET only)
+      - name: Decide whether to build (DST-aware, hourly during ET market hours)
         id: guard
         env:
           EVENT: ${{ github.event_name }}
@@ -36,7 +37,8 @@ jobs:
           from zoneinfo import ZoneInfo
           et = datetime.now(ZoneInfo("America/New_York"))
           manual = os.environ.get("EVENT") == "workflow_dispatch"
-          run = manual or (et.weekday() < 5 and et.hour == 9)
+          # Weekdays, hourly from ~9:35 ET (just after open) through ~16:35 ET (just after close)
+          run = manual or (et.weekday() < 5 and 9 <= et.hour <= 16)
           print(f"ET={et.isoformat()}  weekday={et.weekday()}  manual={manual}  run={run}")
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"run={'true' if run else 'false'}\n")
