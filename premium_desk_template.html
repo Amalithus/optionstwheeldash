@@ -197,12 +197,13 @@ thead th[data-k="watch"]{font-size:13px;color:var(--warn)}
 .ecell{display:inline-flex;flex-direction:column;gap:3px;align-items:flex-end}
 
 /* detail row */
-tr.detail>td{padding:0;border-bottom:1px solid var(--line-strong);background:var(--surface-2)}
+tr.detail>td{padding:0;border-bottom:1px solid var(--line-strong);background:var(--surface-2);white-space:normal}
 .detail-in{padding:18px 20px 20px 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:22px}
 .dgroup h4{font-family:"Archivo";font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--accent-ink);font-weight:700;margin-bottom:9px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .dl{display:grid;grid-template-columns:1fr auto;gap:5px 10px;font-size:12.5px}
 .dl .k{color:var(--muted)}
-.dl .v{font-family:"IBM Plex Mono";font-weight:500;color:var(--ink);text-align:right}
+.dl .v{font-family:"IBM Plex Mono";font-weight:500;color:var(--ink);text-align:right;white-space:nowrap}
+.dl .k{overflow-wrap:anywhere}
 .dl .v.g{color:var(--good)} .dl .v.b{color:var(--bad)} .dl .v.w{color:var(--warn)}
 .dl.dl-c .v{text-align:center} /* Weekly premium col: centre values so Bollinger mid sits under Spot */
 .detail-note{grid-column:1/-1;font-size:11.5px;color:var(--muted);border-top:1px dashed var(--line-strong);padding-top:11px;line-height:1.5}
