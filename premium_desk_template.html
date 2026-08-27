@@ -133,10 +133,21 @@ main{padding:22px 0 60px}
 .map-pick{font-size:12px;color:var(--ink-2)}
 .map-pick b{color:var(--ink)}
 
-/* live ticker strip (TradingView; loads on GitHub/local, blocked on the Claude artifact so it self-hides) */
-.tvstrip{background:var(--surface);border-bottom:1px solid var(--line-strong)}
-.tvstrip:not(:has(iframe)){border-bottom:0}
-.tvstrip .tradingview-widget-copyright{font-size:11px;padding:2px 20px;color:var(--faint)}
+/* top-picks ticker (self-built from our own data — top 10 by downside-safety score) */
+.tvstrip{display:flex;align-items:stretch;background:var(--surface);border-bottom:1px solid var(--line-strong);overflow:hidden}
+.tk-label{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:0 14px;background:var(--surface-3);border-right:1px solid var(--line-strong);
+  font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-ink);white-space:nowrap}
+.tk-scroll{flex:1 1 auto;overflow:hidden;position:relative}
+.tk-track{display:inline-flex;align-items:center;padding:8px 0;white-space:nowrap;animation:tkscroll 55s linear infinite;will-change:transform}
+.tvstrip:hover .tk-track{animation-play-state:paused}
+.tk-item{display:inline-flex;align-items:baseline;gap:7px;padding:0 16px;border-right:1px solid var(--line);font-size:12.5px}
+.tk-sym{font-weight:700;color:var(--ink)}
+.tk-px{font-family:"IBM Plex Mono";color:var(--muted)}
+.tk-chg{font-family:"IBM Plex Mono";font-weight:600}
+.tk-chg.up{color:var(--good)} .tk-chg.down{color:var(--bad)} .tk-chg.flat{color:var(--muted)}
+@keyframes tkscroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.tk-track{animation:none}}
+@media (max-width:640px){.tk-label{padding:0 10px;font-size:9px}.tk-item{padding:0 12px}}
 
 /* controls */
 .controls{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin:6px 0 14px}
@@ -607,37 +618,26 @@ $('#watchOnly').onchange=e=>{state.watchOnly=e.target.checked;render()};
 
 /* ---------- theme ---------- */
 const tbtn=$('#themeBtn');
-function applyTheme(t){ if(t)document.documentElement.setAttribute('data-theme',t); else document.documentElement.removeAttribute('data-theme'); drawMap(); render(); initTicker(); }
+function applyTheme(t){ if(t)document.documentElement.setAttribute('data-theme',t); else document.documentElement.removeAttribute('data-theme'); drawMap(); render(); }
 tbtn.onclick=()=>{ const cur=document.documentElement.getAttribute('data-theme');
   const isDark = cur==='dark' || (!cur && matchMedia('(prefers-color-scheme:dark)').matches);
   applyTheme(isDark?'light':'dark'); };
 matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{drawMap();render()});
 
-/* ---------- live ticker (TradingView ticker tape) ---------- */
+/* ---------- top-picks ticker (self-built from ROWS; top 10 by composite) ---------- */
 function initTicker(){
   const host=$('#tvticker'); if(!host) return;
-  const isDark = document.documentElement.getAttribute('data-theme')==='dark' ||
-    (!document.documentElement.getAttribute('data-theme') && matchMedia('(prefers-color-scheme:dark)').matches);
+  const top = ROWS.slice(0,10);   // ROWS arrives pre-sorted by composite (downside-safety) descending
+  if(!top.length){ host.style.display='none'; return; }
+  const item = r => {
+    const c = r.dayChg;
+    const cls = c==null?'flat':(c>0?'up':(c<0?'down':'flat'));
+    const chg = c==null?'—':((c>0?'▲':(c<0?'▼':'·'))+Math.abs(c*100).toFixed(2)+'%');
+    return `<span class="tk-item"><span class="tk-sym">${r.symbol}</span><span class="tk-px">${fmtP(r.price)}</span><span class="tk-chg ${cls}">${chg}</span></span>`;
+  };
+  const strip = top.map(item).join('');
   host.style.display='';
-  host.innerHTML='<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div>';
-  const s=document.createElement('script');
-  s.type='text/javascript'; s.async=true;
-  s.src='https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
-  s.text=JSON.stringify({
-    symbols:[
-      {proName:'AMEX:SPY',title:'S&P 500'},
-      {proName:'NASDAQ:QQQ',title:'Nasdaq 100'},
-      {proName:'AMEX:DIA',title:'Dow 30'},
-      {proName:'AMEX:IWM',title:'Russell 2000'},
-      {proName:'NASDAQ:TLT',title:'US Treasuries 20y+'},
-      {proName:'AMEX:GLD',title:'Gold'}
-    ],
-    showSymbolLogo:true, isTransparent:true, displayMode:'adaptive',
-    colorTheme: isDark?'dark':'light', locale:'en'
-  });
-  host.querySelector('.tradingview-widget-container').appendChild(s);
-  // If the external script is blocked (e.g. the locked-down Claude artifact), hide the strip so there's no empty gap.
-  setTimeout(()=>{ if(host && !host.querySelector('iframe')) host.style.display='none'; }, 3000);
+  host.innerHTML = `<span class="tk-label">Top 10 · safety</span><div class="tk-scroll"><div class="tk-track" aria-label="Top 10 names by downside-safety score">${strip}${strip}</div></div>`;
 }
 initTicker();
 
