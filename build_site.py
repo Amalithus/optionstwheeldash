@@ -15,7 +15,8 @@ payload={'meta':meta,'rows':out}
 os.makedirs('site',exist_ok=True)
 final=open('premium_desk_template.html').read().replace('__DATA__', json.dumps(payload,default=str))
 assert '__DATA__' not in final
-# Wrap as a full standards-mode document (standalone page needs its own doctype; the Artifact tool adds its own, this path does not)
-final='<!doctype html>\n<html lang="en">\n'+final+'\n</html>\n'
+# Wrap as a full standards-mode document (standalone page needs its own doctype + charset;
+# the Artifact tool adds its own, and GitHub sends a UTF-8 header, but a locally-opened file relies on this meta)
+final='<!doctype html>\n<html lang="en">\n<meta charset="utf-8">\n'+final+'\n</html>\n'
 open('site/index.html','w').write(final)
 print(f'BUILT site/index.html — {len(out)} names, {len(final)} bytes')
