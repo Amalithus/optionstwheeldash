@@ -286,10 +286,9 @@ footer{margin-top:34px;border-top:1px solid var(--line);padding-top:22px}
       </div>
     </div>
     <div class="mast-meta">
-      <div class="meta-item"><span class="k">As of</span><span class="v" id="m-asof">—</span><span class="age" id="m-age"></span></div>
       <div class="meta-item"><span class="k">This wk expiry</span><span class="v" id="m-exp">—</span></div>
       <div class="meta-item"><span class="k">Universe</span><span class="v" id="m-univ">—</span></div>
-      <div class="meta-item"><span class="k">Updates</span><span class="v">Hourly · market hrs</span></div>
+      <div class="meta-item"><span class="k">Updates</span><span class="v">Hourly · market hrs</span><span class="age" id="m-age"></span></div>
     </div>
     <div class="mast-actions">
       <button class="theme-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle light/dark theme">◐</button>
@@ -443,14 +442,15 @@ function ratingLabel(m){
 }
 
 /* ---------- meta / kpis ---------- */
-$('#m-asof').textContent = META.asOfDate;
 (function(){
   const gen = new Date(META.generated); const now = new Date();
   const days = Math.floor((now - new Date(META.asOfDate+'T00:00:00'))/86400000);
   const el = $('#m-age');
-  let txt = days<=0 ? 'updated today' : days===1 ? '1 day ago' : days+' days ago';
-  el.textContent = '· '+txt;
-  // stale after ~5 calendar days
+  let stamp;
+  try { stamp = gen.toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET'; }
+  catch(e){ stamp = gen.toLocaleString(); }
+  el.textContent = 'updated '+stamp;
+  // amber when the data is stale (~5+ calendar days old)
   if(days>=5){ el.classList.add('stale'); }
 })();
 $('#m-exp').textContent = new Date(META.expiryFriday+'T00:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
