@@ -104,6 +104,7 @@ def pull(elig,sectors):
                 downs=[x for x in simple if x<0]
                 r['downsideDev']=statistics.pstdev(downs)*math.sqrt(252) if len(downs)>2 else None
                 r['worstDrop1d']=min(simple) if simple else None
+                r['dayChg']=simple[-1] if simple else None   # latest daily % change (for the top-picks ticker)
                 r['gapDays']=sum(1 for x in simple if x<=-0.05)
                 if len(simple)>10:
                     mm=statistics.fmean(simple);ss=statistics.pstdev(simple)
@@ -215,7 +216,7 @@ def main():
     print('pulling data...',file=sys.stderr);data=pull(elig,sectors)
     print('nasdaq earnings...',file=sys.stderr);nas=nasdaq_earnings(today)
     print('scoring...',file=sys.stderr);rows,friday=score_and_premium(data,nas,today)
-    keep=['symbol','name','sector','price','composite','scoreFund','scoreVol','scoreAnalyst','scoreVal','beta','histVol','maxDD1y','distMA50','distMA200','pos52w','ret1m','ret3m','debtToEquity','netDebtEbitda','currentRatio','profitMargins','operatingMargins','roe','fcf','trailingPE','forwardPE','divYield','marketCap','recMean','recKey','numAnalysts','targetMean','targetHigh','targetLow','earningsDateStr','daysToEarnings','earnBeforeExpiry','earnThisWeek','nasdaqEarnings','callStrike','putStrike','callPrem','putPrem','estWeekPremPct','annPremYield','downsideDev','worstDrop1d','gapDays','retSkew','payoutRatio','exDivDateStr','exDivBeforeExpiry','bbLower','bbMid','bbUpper']
+    keep=['symbol','name','sector','price','composite','scoreFund','scoreVol','scoreAnalyst','scoreVal','beta','histVol','maxDD1y','distMA50','distMA200','pos52w','ret1m','ret3m','debtToEquity','netDebtEbitda','currentRatio','profitMargins','operatingMargins','roe','fcf','trailingPE','forwardPE','divYield','marketCap','recMean','recKey','numAnalysts','targetMean','targetHigh','targetLow','earningsDateStr','daysToEarnings','earnBeforeExpiry','earnThisWeek','nasdaqEarnings','callStrike','putStrike','callPrem','putPrem','estWeekPremPct','annPremYield','downsideDev','worstDrop1d','gapDays','retSkew','payoutRatio','exDivDateStr','exDivBeforeExpiry','bbLower','bbMid','bbUpper','dayChg']
     out=[{k:r.get(k) for k in keep} for r in rows]
     meta={'generated':datetime.datetime.utcnow().isoformat()+'Z','asOfDate':today.isoformat(),'expiryFriday':friday.isoformat(),'universeCount':len(out),'filters':'S&P 500 constituent | has weekly options (Cboe) | price < $120'}
     json.dump({'meta':meta,'rows':out},open('dashboard_data.json','w'),default=str)
