@@ -2,11 +2,13 @@ name: Build Premium Desk
 
 on:
   schedule:
-    # GitHub cron is UTC. Fire at :35 past every UTC hour that could fall inside
-    # ET market hours year-round: EDT (UTC-4) covers UTC 13-20, EST (UTC-5) covers
-    # UTC 14-21 -> union = UTC 13-21. The DST-aware guard below then lets only the
-    # runs whose ET hour is 9..16 proceed, i.e. hourly ~9:35 through ~16:35 ET.
-    - cron: '35 13-21 * * 1-5'
+    # GitHub cron is UTC. Three fixed weekday fires, chosen so each lands INSIDE ET
+    # market hours in BOTH DST states (EDT market = UTC 13:30-20:00, EST market =
+    # UTC 14:30-21:00; intersection UTC 14:30-20:00). No hour guard needed — the ET
+    # clock time just shifts ~1h between summer/winter, which is fine for 3x/day.
+    - cron: '35 14 * * 1-5'   # UTC 14:35  =  10:35 EDT / 9:35 EST   (morning)
+    - cron: '5 17 * * 1-5'    # UTC 17:05  =  13:05 EDT / 12:05 EST  (midday)
+    - cron: '35 19 * * 1-5'   # UTC 19:35  =  15:35 EDT / 14:35 EST  (late session)
   workflow_dispatch: {}   # manual "Run workflow" button
 
 permissions:
@@ -26,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Decide whether to build (DST-aware, hourly during ET market hours)
+      - name: Decide whether to build (weekdays only)
         id: guard
         env:
           EVENT: ${{ github.event_name }}
@@ -37,8 +39,10 @@ jobs:
           from zoneinfo import ZoneInfo
           et = datetime.now(ZoneInfo("America/New_York"))
           manual = os.environ.get("EVENT") == "workflow_dispatch"
-          # Weekdays, hourly from ~9:35 ET (just after open) through ~16:35 ET (just after close)
-          run = manual or (et.weekday() < 5 and 9 <= et.hour <= 16)
+          # Build on ANY scheduled fire on a weekday (GitHub delays/drops scheduled crons, so
+          # do NOT also gate on the hour — that was silently skipping every scheduled run).
+          # The cron window (UTC 13-21) already keeps fires roughly within the trading day.
+          run = manual or (et.weekday() < 5)
           print(f"ET={et.isoformat()}  weekday={et.weekday()}  manual={manual}  run={run}")
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               f.write(f"run={'true' if run else 'false'}\n")
