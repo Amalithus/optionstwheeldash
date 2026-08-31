@@ -100,6 +100,18 @@ def pull(elig,sectors):
                 if len(cl)>=20:
                     win=cl[-20:];mid=sum(win)/20;sd=statistics.pstdev(win)
                     r['bbMid']=round(mid,2);r['bbLower']=round(mid-2*sd,2);r['bbUpper']=round(mid+2*sd,2)
+                    # rolling 20d bands across the whole series, then keep the last ~6 months (126 trading days) for the detail chart
+                    lowS=[];upS=[]
+                    for j in range(len(cl)):
+                        if j>=19:
+                            w=cl[j-19:j+1];m=sum(w)/20;s=statistics.pstdev(w)
+                            lowS.append(m-2*s);upS.append(m+2*s)
+                        else:
+                            lowS.append(None);upS.append(None)
+                    k=min(126,len(cl))
+                    r['chartPx']=[round(x,2) for x in cl[-k:]]
+                    r['chartBbL']=[round(x,2) if x is not None else None for x in lowS[-k:]]
+                    r['chartBbU']=[round(x,2) if x is not None else None for x in upS[-k:]]
                 simple=[cl[k]/cl[k-1]-1 for k in range(1,len(cl)) if cl[k-1]]
                 downs=[x for x in simple if x<0]
                 r['downsideDev']=statistics.pstdev(downs)*math.sqrt(252) if len(downs)>2 else None
@@ -216,7 +228,7 @@ def main():
     print('pulling data...',file=sys.stderr);data=pull(elig,sectors)
     print('nasdaq earnings...',file=sys.stderr);nas=nasdaq_earnings(today)
     print('scoring...',file=sys.stderr);rows,friday=score_and_premium(data,nas,today)
-    keep=['symbol','name','sector','price','composite','scoreFund','scoreVol','scoreAnalyst','scoreVal','beta','histVol','maxDD1y','distMA50','distMA200','pos52w','ret1m','ret3m','debtToEquity','netDebtEbitda','currentRatio','profitMargins','operatingMargins','roe','fcf','trailingPE','forwardPE','divYield','marketCap','recMean','recKey','numAnalysts','targetMean','targetHigh','targetLow','earningsDateStr','daysToEarnings','earnBeforeExpiry','earnThisWeek','nasdaqEarnings','callStrike','putStrike','callPrem','putPrem','estWeekPremPct','annPremYield','downsideDev','worstDrop1d','gapDays','retSkew','payoutRatio','exDivDateStr','exDivBeforeExpiry','bbLower','bbMid','bbUpper','dayChg']
+    keep=['symbol','name','sector','price','composite','scoreFund','scoreVol','scoreAnalyst','scoreVal','beta','histVol','maxDD1y','distMA50','distMA200','pos52w','ret1m','ret3m','debtToEquity','netDebtEbitda','currentRatio','profitMargins','operatingMargins','roe','fcf','trailingPE','forwardPE','divYield','marketCap','recMean','recKey','numAnalysts','targetMean','targetHigh','targetLow','earningsDateStr','daysToEarnings','earnBeforeExpiry','earnThisWeek','nasdaqEarnings','callStrike','putStrike','callPrem','putPrem','estWeekPremPct','annPremYield','downsideDev','worstDrop1d','gapDays','retSkew','payoutRatio','exDivDateStr','exDivBeforeExpiry','bbLower','bbMid','bbUpper','dayChg','chartPx','chartBbL','chartBbU']
     out=[{k:r.get(k) for k in keep} for r in rows]
     meta={'generated':datetime.datetime.utcnow().isoformat()+'Z','asOfDate':today.isoformat(),'expiryFriday':friday.isoformat(),'universeCount':len(out),'filters':'S&P 500 constituent | has weekly options (Cboe) | price < $120'}
     json.dump({'meta':meta,'rows':out},open('dashboard_data.json','w'),default=str)
