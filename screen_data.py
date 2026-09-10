@@ -28,40 +28,50 @@ def val(d,k):
     v=d.get(k) if isinstance(d,dict) else None
     return v.get('raw') if isinstance(v,dict) else v
 
+def read_extras():
+    """Manual watchlist of NON-S&P tickers to also monitor — extra_tickers.txt next to this
+    script, one ticker per line, '#' comments allowed. Edit that file to update the list."""
+    import os
+    p=os.path.join(os.path.dirname(os.path.abspath(__file__)),'extra_tickers.txt')
+    out=[]
+    try:
+        for ln in open(p):
+            t=ln.split('#',1)[0].strip().upper().replace('.','-')
+            if t:out.append(t)
+    except FileNotFoundError:
+        pass
+    return out
+
 def build_universe():
+    # ALL S&P 500 (no price / weeklys pre-filter — those are now UI filters)
     html=urllib.request.urlopen(urllib.request.Request('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies',headers=UA),timeout=30).read().decode()
     df=pd.read_html(io.StringIO(html))[0]
     syms=df['Symbol'].astype(str).str.replace('.','-',regex=False).str.strip().tolist()
     sectors=dict(zip(syms,df['GICS Sector'].astype(str)))
-    wk=urllib.request.urlopen(urllib.request.Request('https://www.cboe.com/available_weeklys/get_csv_download/',headers=UA),timeout=25).read().decode()
-    lines=wk.splitlines();start=[i for i,l in enumerate(lines) if 'Available Weeklys - Equity' in l][0]
+    # Cboe weeklys list → set (used to TAG each name, not to filter)
     weeklys=set()
-    for l in lines[start+1:]:
-        m=re.match(r'"([A-Z][A-Z\.\-]{0,6})",',l)
-        if m:weeklys.add(m.group(1).replace('.','-'))
-    cand=sorted(set(syms)&weeklys)
-    # bulk quote to filter price<120
-    op,cr=session();elig=[]
-    for i in range(0,len(cand),60):
-        b=cand[i:i+60]
-        try:
-            j=jget('https://query1.finance.yahoo.com/v7/finance/quote?symbols='+urllib.parse.quote(','.join(b))+'&crumb='+urllib.parse.quote(cr))
-            for r in j.get('quoteResponse',{}).get('result',[]):
-                p=r.get('regularMarketPrice')
-                if p is not None and p<120:elig.append(r['symbol'])
-        except Exception as e:print('quote batch fail',e,file=sys.stderr)
-        time.sleep(0.4)
-    return elig,sectors
+    try:
+        wk=urllib.request.urlopen(urllib.request.Request('https://www.cboe.com/available_weeklys/get_csv_download/',headers=UA),timeout=25).read().decode()
+        lines=wk.splitlines();start=[i for i,l in enumerate(lines) if 'Available Weeklys - Equity' in l][0]
+        for l in lines[start+1:]:
+            m=re.match(r'"([A-Z][A-Z\.\-]{0,6})",',l)
+            if m:weeklys.add(m.group(1).replace('.','-'))
+    except Exception as e:print('cboe weeklys fail',e,file=sys.stderr)
+    extras=read_extras()
+    universe=sorted(set(syms)|set(extras))
+    print(f'  {len(syms)} S&P + {len(extras)} extras = {len(universe)} names; {len(weeklys)} weeklys tagged',file=sys.stderr)
+    return universe,sectors,weeklys
 
-def pull(elig,sectors):
-    MODS='financialData,defaultKeyStatistics,summaryDetail,calendarEvents,price,earningsHistory'
+def pull(elig,sectors,weeklys):
+    MODS='financialData,defaultKeyStatistics,summaryDetail,calendarEvents,price,earningsHistory,summaryProfile'
     op,cr=session();data={}
     w={'strongBuy':1,'buy':2,'hold':3,'sell':4,'strongSell':5}
     for i,s in enumerate(elig):
-        r={'symbol':s,'sector':sectors.get(s,'Unknown')}
+        r={'symbol':s,'sector':sectors.get(s) or 'Unknown','hasWeeklys':bool(s in weeklys)}
         try:
             j=jget(f'https://query1.finance.yahoo.com/v10/finance/quoteSummary/{urllib.parse.quote(s)}?modules={MODS}&crumb='+urllib.parse.quote(cr))['quoteSummary']['result'][0]
-            fd=j.get('financialData',{});ks=j.get('defaultKeyStatistics',{});sd=j.get('summaryDetail',{});ce=j.get('calendarEvents',{});pr=j.get('price',{});eh=j.get('earningsHistory',{})
+            fd=j.get('financialData',{});ks=j.get('defaultKeyStatistics',{});sd=j.get('summaryDetail',{});ce=j.get('calendarEvents',{});pr=j.get('price',{});eh=j.get('earningsHistory',{});sp=j.get('summaryProfile',{})
+            r['sector']=sectors.get(s) or sp.get('sector') or 'Unknown'   # extras (non-S&P) get sector from Yahoo profile
             r['name']=val(pr,'longName') or val(pr,'shortName') or s
             r['price']=val(fd,'currentPrice') or val(pr,'regularMarketPrice')
             r['recMean']=val(fd,'recommendationMean');r['recKey']=fd.get('recommendationKey');r['numAnalysts']=val(fd,'numberOfAnalystOpinions')
@@ -104,8 +114,8 @@ def pull(elig,sectors):
                     lowS=[];upS=[]
                     for j in range(len(cl)):
                         if j>=19:
-                            w=cl[j-19:j+1];m=sum(w)/20;s=statistics.pstdev(w)
-                            lowS.append(m-2*s);upS.append(m+2*s)
+                            w=cl[j-19:j+1];m=sum(w)/20;sd=statistics.pstdev(w)
+                            lowS.append(m-2*sd);upS.append(m+2*sd)
                         else:
                             lowS.append(None);upS.append(None)
                     k=min(126,len(cl))
@@ -224,13 +234,13 @@ def score_and_premium(data,nas,today):
 
 def main():
     today=datetime.date.today()
-    print('universe...',file=sys.stderr);elig,sectors=build_universe();print(f'  {len(elig)} eligible',file=sys.stderr)
-    print('pulling data...',file=sys.stderr);data=pull(elig,sectors)
+    print('universe...',file=sys.stderr);elig,sectors,weeklys=build_universe()
+    print('pulling data...',file=sys.stderr);data=pull(elig,sectors,weeklys)
     print('nasdaq earnings...',file=sys.stderr);nas=nasdaq_earnings(today)
     print('scoring...',file=sys.stderr);rows,friday=score_and_premium(data,nas,today)
-    keep=['symbol','name','sector','price','composite','scoreFund','scoreVol','scoreAnalyst','scoreVal','beta','histVol','maxDD1y','distMA50','distMA200','pos52w','ret1m','ret3m','debtToEquity','netDebtEbitda','currentRatio','profitMargins','operatingMargins','roe','fcf','trailingPE','forwardPE','divYield','marketCap','recMean','recKey','numAnalysts','targetMean','targetHigh','targetLow','earningsDateStr','daysToEarnings','earnBeforeExpiry','earnThisWeek','nasdaqEarnings','callStrike','putStrike','callPrem','putPrem','estWeekPremPct','annPremYield','downsideDev','worstDrop1d','gapDays','retSkew','payoutRatio','exDivDateStr','exDivBeforeExpiry','bbLower','bbMid','bbUpper','dayChg','chartPx','chartBbL','chartBbU']
+    keep=['symbol','name','sector','hasWeeklys','price','composite','scoreFund','scoreVol','scoreAnalyst','scoreVal','beta','histVol','maxDD1y','distMA50','distMA200','pos52w','ret1m','ret3m','debtToEquity','netDebtEbitda','currentRatio','profitMargins','operatingMargins','roe','fcf','trailingPE','forwardPE','divYield','marketCap','recMean','recKey','numAnalysts','targetMean','targetHigh','targetLow','earningsDateStr','daysToEarnings','earnBeforeExpiry','earnThisWeek','nasdaqEarnings','callStrike','putStrike','callPrem','putPrem','estWeekPremPct','annPremYield','downsideDev','worstDrop1d','gapDays','retSkew','payoutRatio','exDivDateStr','exDivBeforeExpiry','bbLower','bbMid','bbUpper','dayChg','chartPx','chartBbL','chartBbU']
     out=[{k:r.get(k) for k in keep} for r in rows]
-    meta={'generated':datetime.datetime.utcnow().isoformat()+'Z','asOfDate':today.isoformat(),'expiryFriday':friday.isoformat(),'universeCount':len(out),'filters':'S&P 500 constituent | has weekly options (Cboe) | price < $120'}
+    meta={'generated':datetime.datetime.utcnow().isoformat()+'Z','asOfDate':today.isoformat(),'expiryFriday':friday.isoformat(),'universeCount':len(out),'filters':'S&P 500 + custom extras | weeklies & price cap = UI filters'}
     json.dump({'meta':meta,'rows':out},open('dashboard_data.json','w'),default=str)
     print(f'OK {len(out)} names, {sum(1 for r in out if r["earnBeforeExpiry"])} benched, expiry {friday}',file=sys.stderr)
 
