@@ -1,0 +1,13 @@
+# Premium Desk — custom watchlist of NON-S&P 500 tickers to also pull.
+# One ticker per line. Anything after a '#' is ignored, and blank lines are fine.
+# These load ALONGSIDE the full S&P 500 and are benchmarked against it.
+# Weeklies + price cap are UI filters, so a name here still shows up even if it
+# has no weeklys or sits above your price cap — just toggle the filters to see it.
+# Edit this file (like build.yml) and re-run the workflow to update the list.
+#
+CPRI
+FNMA
+HHH
+KSPI
+SEG
+SFM
