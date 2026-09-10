@@ -187,7 +187,8 @@ tr.row.gate td:first-child{border-left-color:var(--bad)}
 .wcount{color:var(--accent-ink);font-weight:700;font-size:11px}
 thead th[data-k="watch"]{font-size:13px;color:var(--warn)}
 .sym{font-family:"Archivo";font-weight:700;font-size:14px;letter-spacing:-.01em}
-.nm{font-size:11px;color:var(--muted);max-width:168px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nm{font-size:11px;color:var(--muted);max-width:168px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+a.nmlink{text-decoration:none;cursor:pointer} a.nmlink:hover{color:var(--accent);text-decoration:underline}
 .sector-chip{font-size:10px;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:1px 8px;background:var(--surface-2)}
 
 /* score cell */
@@ -244,6 +245,7 @@ tr.detail>td{padding:0;border-bottom:1px solid var(--line-strong);background:var
 .cx-ylbl{font-family:"IBM Plex Mono";font-size:9px;fill:var(--faint);text-anchor:end}
 .cx-lbl.put{fill:var(--good)} .cx-lbl.call{fill:var(--bad)}
 .cx-dot{fill:var(--ink)}
+.cx-skel{display:flex;align-items:center;justify-content:center;height:170px;color:var(--faint);font-size:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px}
 
 /* portfolio placeholder */
 .watch{margin-top:14px;border:1.5px dashed var(--line-strong);border-radius:var(--radius);background:
@@ -365,9 +367,18 @@ footer{margin-top:34px;border-top:1px solid var(--line);padding-top:22px}
         <option value="daysToEarnings">Days to earnings</option>
       </select>
     </div>
+    <div class="ctl"><label for="priceCap">Price cap</label>
+      <select id="priceCap">
+        <option value="50">≤ $50</option>
+        <option value="100">≤ $100</option>
+        <option value="120">≤ $120</option>
+        <option value="250">≤ $250</option>
+        <option value="0" selected>Any</option>
+      </select>
+    </div>
+    <label class="toggle"><input type="checkbox" id="weekliesOnly" checked> Weeklies only</label>
     <label class="toggle"><input type="checkbox" id="watchOnly"> ★ Watchlist only <span id="watchCount" class="wcount"></span></label>
     <label class="toggle"><input type="checkbox" id="hideGate"> Hide flagged (earn / ex-div)</label>
-    <label class="toggle"><input type="checkbox" id="onlySafe"> Composite ≥ 60 only</label>
     <span class="count-note" id="countNote"></span>
   </div>
 
@@ -479,27 +490,33 @@ $('#m-univ').textContent = META.universeCount+' names';
 $('#disclaim').innerHTML = 'Generated '+new Date(META.generated).toLocaleString()+' · Data: Yahoo Finance, Cboe, Nasdaq (delayed / indicative). '+
   '<b>This is a monitoring &amp; screening tool, not investment advice.</b> Premium figures are model estimates; verify live option prices, IV, and earnings dates in your broker before trading. The decision to sell any option is yours.';
 
-const gateNames = ROWS.filter(r=>isGated(r));
-const safe = ROWS.filter(r=>r.composite>=65 && !isGated(r));
-const topPick = ROWS.filter(r=>!isGated(r)).sort((a,b)=>b.composite-a.composite)[0];
-const medYield = (()=>{const a=ROWS.map(r=>r.annPremYield).filter(x=>x!=null).sort((x,y)=>x-y);return a.length?a[Math.floor(a.length/2)]:null})();
-const kpis=[
-  {lab:'Eligible universe',num:META.universeCount,cap:'S&P 500 · weeklys · &lt;$120',cls:''},
-  {lab:'Screen as safer',num:safe.length,cap:'composite ≥ 65, gate clear',cls:'good',dot:'--good'},
-  {lab:'Benched — earn/ex-div',num:gateNames.length,cap:'earnings or ex-div before expiry',cls:gateNames.length?'bad':'',dot:'--bad'},
-  {lab:'Top pick today',num:topPick?topPick.symbol:'—',cap:topPick?('score '+topPick.composite+' · β '+fmtN(topPick.beta)):'',cls:'accent'},
-  {lab:'Median prem. yield',num:medYield!=null?medYield.toFixed(0)+'%':'—',cap:'annualized, one leg (avg)',cls:''},
-];
-$('#kpis').innerHTML = kpis.map(k=>`<div class="kpi ${k.cls}">
-  <div class="lab">${k.dot?`<span class="dot" style="background:var(${k.dot})"></span>`:''}${k.lab}</div>
-  <div class="num">${k.num}</div><div class="cap">${k.cap}</div></div>`).join('');
+// KPIs summarise the ELIGIBLE set (after weeklies + price-cap filters), recomputed as those change.
+function eligibleSet(){ return ROWS.filter(r=> (!state.weekliesOnly||r.hasWeeklys) && (!state.priceCap||(r.price!=null&&r.price<=state.priceCap))); }
+function renderKPIs(){
+  const base=eligibleSet();
+  const gateNames=base.filter(r=>isGated(r));
+  const safe=base.filter(r=>r.composite>=65 && !isGated(r));
+  const topPick=base.filter(r=>!isGated(r)).sort((a,b)=>b.composite-a.composite)[0];
+  const medYield=(()=>{const a=base.map(r=>r.annPremYield).filter(x=>x!=null).sort((x,y)=>x-y);return a.length?a[Math.floor(a.length/2)]:null})();
+  const capTxt=`${state.weekliesOnly?'weeklies · ':''}${state.priceCap?('≤$'+state.priceCap):'any price'} · of ${META.universeCount}`;
+  const kpis=[
+    {lab:'Eligible now',num:base.length,cap:capTxt,cls:''},
+    {lab:'Screen as safer',num:safe.length,cap:'composite ≥ 65, gate clear',cls:'good',dot:'--good'},
+    {lab:'Benched — earn/ex-div',num:gateNames.length,cap:'earnings or ex-div before expiry',cls:gateNames.length?'bad':'',dot:'--bad'},
+    {lab:'Top pick today',num:topPick?topPick.symbol:'—',cap:topPick?('score '+topPick.composite+' · β '+fmtN(topPick.beta)):'',cls:'accent'},
+    {lab:'Median prem. yield',num:medYield!=null?medYield.toFixed(0)+'%':'—',cap:'annualized, one leg (avg)',cls:''},
+  ];
+  $('#kpis').innerHTML = kpis.map(k=>`<div class="kpi ${k.cls}">
+    <div class="lab">${k.dot?`<span class="dot" style="background:var(${k.dot})"></span>`:''}${k.lab}</div>
+    <div class="num">${k.num}</div><div class="cap">${k.cap}</div></div>`).join('');
+}
 
 /* ---------- columns ---------- */
 const COLS=[
   {k:'watch',t:'★',l:true,nosort:true,cell:r=>`<input type="checkbox" class="wchk" data-sym="${r.symbol}" ${watch.has(r.symbol)?'checked':''} aria-label="Add ${r.symbol} to watchlist">`},
   {k:'rank',t:'#',l:true,cell:(r,i)=>`<span class="rank mono">${i+1}</span>`,nosort:true},
   {k:'symbol',t:'Name',l:true,cell:r=>`<div style="display:flex;flex-direction:column;gap:1px">
-      <span class="sym">${r.symbol}</span><span class="nm" title="${(r.name||'').replace(/"/g,'')}">${r.name||''}</span></div>`},
+      <span class="sym">${r.symbol}</span><a class="nm nmlink" href="https://finance.yahoo.com/quote/${encodeURIComponent(r.symbol)}" target="_blank" rel="noopener noreferrer" title="${(r.name||'').replace(/"/g,'')} — open on Yahoo Finance" onclick="event.stopPropagation()">${r.name||''}</a></div>`},
   {k:'sector',t:'Sector',l:true,cell:r=>`<span class="sector-chip">${(r.sector||'').replace('Information Technology','Info Tech').replace('Consumer Discretionary','Cons. Disc.').replace('Communication Services','Comm. Svcs').replace('Consumer Staples','Staples')}</span>`},
   {k:'price',t:'Price',cell:r=>`<span class="mono">${fmtP(r.price)}</span>`},
   {k:'composite',t:'Safety score',cell:r=>{const c=scoreColor(r.composite);return `<div class="score">
@@ -530,7 +547,7 @@ function fmtDate(s){ if(!s) return '—'; const d=new Date(s+'T00:00:00'); retur
 
 /* ---------- state + render ---------- */
 let sortKey='composite', sortDir=-1;
-const state={q:'',sector:'',hideGate:false,onlySafe:false,watchOnly:false};
+const state={q:'',sector:'',hideGate:false,watchOnly:false,weekliesOnly:true,priceCap:0};
 
 const secSel=$('#sector');
 [...new Set(ROWS.map(r=>r.sector).filter(Boolean))].sort().forEach(s=>{
@@ -546,9 +563,10 @@ function getRows(){
   let rs=ROWS.filter(r=>{
     if(state.q){const q=state.q.toLowerCase(); if(!(r.symbol.toLowerCase().includes(q)||(r.name||'').toLowerCase().includes(q))) return false;}
     if(state.sector && r.sector!==state.sector) return false;
+    if(state.weekliesOnly && !r.hasWeeklys) return false;
+    if(state.priceCap && !(r.price!=null && r.price<=state.priceCap)) return false;
     if(state.hideGate && isGated(r)) return false;
     if(state.watchOnly && !watch.has(r.symbol)) return false;
-    if(state.onlySafe && !(r.composite>=60)) return false;
     return true;
   });
   const nullLast=(v)=> v==null?(sortDir<0?-1e12:1e12):v;
@@ -558,6 +576,7 @@ function getRows(){
 let expanded=new Set();
 function render(){
   headRow();
+  renderKPIs();
   const rs=getRows();
   const body=$('#body'); body.innerHTML='';
   rs.forEach((r,i)=>{
@@ -566,7 +585,7 @@ function render(){
     tr.innerHTML=COLS.map(c=>`<td class="${c.l?'l':''}">${c.cell(r,i)}</td>`).join('');
     tr.onclick=()=>{ if(expanded.has(r.symbol))expanded.delete(r.symbol); else expanded.add(r.symbol); render(); };
     body.appendChild(tr);
-    if(expanded.has(r.symbol)) body.appendChild(detailRow(r));
+    if(expanded.has(r.symbol)){ body.appendChild(detailRow(r)); if(!(Array.isArray(r.chartPx)&&r.chartPx.length)) hydrateChart(r); }
   });
   body.querySelectorAll('.wchk').forEach(cb=>{
     cb.addEventListener('click',e=>e.stopPropagation());
@@ -575,59 +594,64 @@ function render(){
   $('#countNote').textContent = rs.length+' of '+ROWS.length+' names shown';
 }
 function dv(v,cls=''){return `<span class="v ${cls}">${v}</span>`}
-function bandChart(r){
-  const px=r.chartPx;
+function chartSVG(px,L,U,putStrike,callStrike){
   if(!Array.isArray(px)||px.length<5) return '';
-  const L=r.chartBbL||[], U=r.chartBbU||[], n=px.length;
+  L=L||[];U=U||[];const n=px.length;
   const W=820,H=200,padL=46,padR=68,padT=12,padB=14;
   let lo=Infinity,hi=-Infinity;
   for(const v of px){ if(v!=null){ if(v<lo)lo=v; if(v>hi)hi=v; } }
   for(const v of L){ if(v!=null&&v<lo)lo=v; }
   for(const v of U){ if(v!=null&&v>hi)hi=v; }
-  if(r.putStrike!=null) lo=Math.min(lo,r.putStrike);
-  if(r.callStrike!=null) hi=Math.max(hi,r.callStrike);
+  if(putStrike!=null) lo=Math.min(lo,putStrike);
+  if(callStrike!=null) hi=Math.max(hi,callStrike);
   if(!isFinite(lo)||!isFinite(hi)) return '';
   const span=(hi-lo)||1; lo-=span*0.05; hi+=span*0.05;
   const X=i=> padL + i*(W-padL-padR)/(n-1);
   const Y=v=> padT + (hi-v)*(H-padT-padB)/(hi-lo);
-  // price (y) axis — nice ticks + gridlines
-  const niceStep=(span,c)=>{ const raw=span/c, mag=Math.pow(10,Math.floor(Math.log10(raw))), nrm=raw/mag; return (nrm<1.5?1:nrm<3?2:nrm<7?5:10)*mag; };
+  const niceStep=(sp,c)=>{ const raw=sp/c, mag=Math.pow(10,Math.floor(Math.log10(raw))), nrm=raw/mag; return (nrm<1.5?1:nrm<3?2:nrm<7?5:10)*mag; };
   const step=niceStep(hi-lo,4), dec=(step>=2?0:(step>=0.5?1:2));
   let grid='';
-  for(let v=Math.ceil(lo/step)*step; v<=hi+1e-9; v+=step){
-    const y=Y(v).toFixed(1);
+  for(let v=Math.ceil(lo/step)*step; v<=hi+1e-9; v+=step){ const y=Y(v).toFixed(1);
     grid+=`<line class="cx-grid" x1="${padL}" y1="${y}" x2="${(W-padR).toFixed(1)}" y2="${y}"/>`
-        +`<text class="cx-ylbl" x="${padL-6}" y="${(Y(v)+3).toFixed(1)}">$${v.toFixed(dec)}</text>`;
-  }
+        +`<text class="cx-ylbl" x="${padL-6}" y="${(Y(v)+3).toFixed(1)}">$${v.toFixed(dec)}</text>`; }
   let idx=[]; for(let i=0;i<n;i++){ if(U[i]!=null&&L[i]!=null) idx.push(i); }
   let band='';
-  if(idx.length>1){
-    const up=idx.map(i=>X(i).toFixed(1)+','+Y(U[i]).toFixed(1)).join(' ');
+  if(idx.length>1){ const up=idx.map(i=>X(i).toFixed(1)+','+Y(U[i]).toFixed(1)).join(' ');
     const dn=idx.slice().reverse().map(i=>X(i).toFixed(1)+','+Y(L[i]).toFixed(1)).join(' ');
     band=`<polygon class="cx-band" points="${up} ${dn}"/>`
         +`<polyline class="cx-bandline" points="${idx.map(i=>X(i).toFixed(1)+','+Y(U[i]).toFixed(1)).join(' ')}"/>`
-        +`<polyline class="cx-bandline" points="${idx.map(i=>X(i).toFixed(1)+','+Y(L[i]).toFixed(1)).join(' ')}"/>`;
-  }
+        +`<polyline class="cx-bandline" points="${idx.map(i=>X(i).toFixed(1)+','+Y(L[i]).toFixed(1)).join(' ')}"/>`; }
   const pxline=`<polyline class="cx-px" points="${px.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ')}"/>`;
   const lastX=X(n-1), lastY=Y(px[n-1]);
   const dot=`<circle class="cx-dot" cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="2.6"/>`;
-  const sLine=(v,cls,lab)=> v==null?'':
+  const sLine=(v,cls)=> v==null?'':
      `<line class="${cls}" x1="${padL}" y1="${Y(v).toFixed(1)}" x2="${(W-padR).toFixed(1)}" y2="${Y(v).toFixed(1)}"/>`
     +`<text class="cx-lbl ${cls==='cx-put'?'put':'call'}" x="${(W-padR+5).toFixed(1)}" y="${(Y(v)+3).toFixed(1)}">$${v.toFixed(1)} ${cls==='cx-put'?'put':'call'}</text>`;
   const spot=`<text class="cx-lbl" x="${(W-padR+5).toFixed(1)}" y="${(lastY-4).toFixed(1)}">$${px[n-1].toFixed(1)}</text>`;
-  return `<div class="chartbox">
-    <div class="cx-head"><h4>Price · 6-month (daily)</h4>
-      <span class="cx-leg">
-        <i><span class="cx-sw" style="border-top-color:var(--ink)"></span>Price</i>
-        <i><span class="cx-sw" style="border-top-color:var(--accent)"></span>Bollinger 20d (±2σ, rolling)</i>
-        <i><span class="cx-sw" style="border-top-color:var(--good);border-top-style:dashed"></span>~0.15Δ put</i>
-        <i><span class="cx-sw" style="border-top-color:var(--bad);border-top-style:dashed"></span>~0.15Δ call</i>
-      </span>
-    </div>
-    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="6-month daily price with rolling Bollinger bands and put/call strike levels">
-      ${grid}${band}${sLine(r.putStrike,'cx-put')}${sLine(r.callStrike,'cx-call')}${pxline}${dot}${spot}
-    </svg>
-  </div>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="6-month daily price with rolling Bollinger bands and put/call strike levels">${grid}${band}${sLine(putStrike,'cx-put')}${sLine(callStrike,'cx-call')}${pxline}${dot}${spot}</svg>`;
+}
+const CX_HEAD=`<div class="cx-head"><h4>Price · 6-month (daily)</h4><span class="cx-leg">
+    <i><span class="cx-sw" style="border-top-color:var(--ink)"></span>Price</i>
+    <i><span class="cx-sw" style="border-top-color:var(--accent)"></span>Bollinger 20d (±2σ, rolling)</i>
+    <i><span class="cx-sw" style="border-top-color:var(--good);border-top-style:dashed"></span>~0.15Δ put</i>
+    <i><span class="cx-sw" style="border-top-color:var(--bad);border-top-style:dashed"></span>~0.15Δ call</i></span></div>`;
+function bandChart(r){
+  // Charts baked in (artifact / local file) → render now. Otherwise ship a skeleton and lazy-fetch
+  // charts/<SYM>.json on the live site (see hydrateChart), keeping the main payload light.
+  const inner = (Array.isArray(r.chartPx)&&r.chartPx.length>=5)
+    ? chartSVG(r.chartPx,r.chartBbL,r.chartBbU,r.putStrike,r.callStrike)
+    : `<div class="cx-skel">Loading chart…</div>`;
+  return `<div class="chartbox"><div class="cx-plot" id="plot-${r.symbol}">${CX_HEAD}${inner}</div></div>`;
+}
+async function hydrateChart(r){
+  const host=document.getElementById('plot-'+r.symbol); if(!host) return;
+  const set=html=>{ const s=host.querySelector('.cx-skel'); if(s) s.outerHTML=html; };
+  try{
+    const resp=await fetch('charts/'+encodeURIComponent(r.symbol)+'.json',{cache:'no-store'});
+    if(!resp.ok) throw 0;
+    const d=await resp.json();
+    set(chartSVG(d.px,d.l,d.u,r.putStrike,r.callStrike)||'<div class="cx-skel">Chart unavailable</div>');
+  }catch(e){ set('<div class="cx-skel">Chart unavailable</div>'); }
 }
 function detailRow(r){
   const tr=document.createElement('tr'); tr.className='detail';
@@ -688,8 +712,9 @@ function detailRow(r){
 $('#q').oninput=e=>{state.q=e.target.value;render()};
 $('#sector').onchange=e=>{state.sector=e.target.value;render()};
 $('#sortsel').onchange=e=>{sortKey=e.target.value;sortDir=(sortKey==='beta'||sortKey==='trailingPE'||sortKey==='daysToEarnings'||sortKey==='price')?1:-1;render()};
+$('#weekliesOnly').onchange=e=>{state.weekliesOnly=e.target.checked;render();drawMap();initTicker()};
+$('#priceCap').onchange=e=>{state.priceCap=+e.target.value;render();drawMap();initTicker()};
 $('#hideGate').onchange=e=>{state.hideGate=e.target.checked;render()};
-$('#onlySafe').onchange=e=>{state.onlySafe=e.target.checked;render()};
 $('#watchOnly').onchange=e=>{state.watchOnly=e.target.checked;render()};
 
 /* ---------- theme ---------- */
@@ -703,8 +728,9 @@ matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>{drawMap
 /* ---------- top-picks ticker (self-built from ROWS; top 10 by composite) ---------- */
 function initTicker(){
   const host=$('#tvticker'); if(!host) return;
-  const top = ROWS.slice(0,10);   // ROWS arrives pre-sorted by composite (downside-safety) descending
+  const top = eligibleSet().slice(0,10);   // top-safety names that pass the current weeklies/price filters (ROWS is pre-sorted by composite desc)
   if(!top.length){ host.style.display='none'; return; }
+  host.style.display='';
   const item = r => {
     const c = r.dayChg;
     const cls = c==null?'flat':(c>0?'up':(c<0?'down':'flat'));
@@ -724,7 +750,8 @@ function drawMap(){
   const W=rect.width, H=rect.height; if(W<10){return;}
   cv.width=W*dpr; cv.height=H*dpr; const x=cv.getContext('2d'); x.setTransform(dpr,0,0,dpr,0,0); x.clearRect(0,0,W,H);
   const pad={l:52,r:16,t:18,b:40};
-  const xs=ROWS.map(r=>r.composite), ys=ROWS.map(r=>r.annPremYield).filter(v=>v!=null);
+  const MR=eligibleSet(); if(!MR.length){x.fillStyle=css('--faint');x.font='12px "IBM Plex Sans"';x.textAlign='center';x.fillText('No names match the current filters.',W/2,H/2);pts=[];return;}
+  const xs=MR.map(r=>r.composite), ys=MR.map(r=>r.annPremYield).filter(v=>v!=null);
   const xMin=Math.min(...xs)-3,xMax=Math.max(...xs)+3, yMin=0,yMax=Math.max(...ys)*1.08;
   const px=v=>pad.l+(v-xMin)/(xMax-xMin)*(W-pad.l-pad.r);
   const py=v=>H-pad.b-(v-yMin)/(yMax-yMin)*(H-pad.t-pad.b);
@@ -747,14 +774,14 @@ function drawMap(){
   x.save();x.translate(13,(pad.t+H-pad.b)/2);x.rotate(-Math.PI/2);x.fillText('PREMIUM YIELD  →',0,0);x.restore();
   // points
   pts=[];
-  ROWS.forEach(r=>{ if(r.annPremYield==null)return; const X=px(r.composite),Y=py(r.annPremYield);
+  MR.forEach(r=>{ if(r.annPremYield==null)return; const X=px(r.composite),Y=py(r.annPremYield);
     const col = isGated(r)? css('--bad') : scoreColor(r.composite);
     x.beginPath();x.arc(X,Y,r.composite>=65?6:5,0,7); x.fillStyle=col; x.globalAlpha=isGated(r)?.55:.9; x.fill();
     x.globalAlpha=1; x.lineWidth=1.2; x.strokeStyle=css('--surface'); x.stroke();
     pts.push({X,Y,r}); });
   // label a few standouts (high composite)
   x.fillStyle=css('--ink'); x.font='600 10px "IBM Plex Mono"'; x.textAlign='left';
-  ROWS.filter(r=>!isGated(r)).sort((a,b)=>b.composite-a.composite).slice(0,6).forEach(r=>{
+  MR.filter(r=>!isGated(r)).sort((a,b)=>b.composite-a.composite).slice(0,6).forEach(r=>{
     if(r.annPremYield==null)return; x.fillText(r.symbol, px(r.composite)+8, py(r.annPremYield)+3);
   });
 }
